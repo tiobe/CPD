@@ -36,6 +36,8 @@ PARSER_END(MatlabParserImpl)
   "\r\n" : DEFAULT
 |
   "\n" : DEFAULT
+|
+  "\f" : DEFAULT
 }
 
 <DEFAULT, TRANSPOSE> MORE:
