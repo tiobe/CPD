@@ -1,0 +1,10 @@
+    [Image] or [Truncated image[            Bcol      Ecol
+L1
+    [public]                                1         7
+    [class]                                 8         13
+    [SampleClass]                           14        25
+L2
+    [{]                                     1         2
+L4
+    [}]                                     1         2
+EOF

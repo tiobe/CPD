@@ -101,6 +101,11 @@ class CsCpdLexerTest extends CpdTextComparisonTest {
         doTest("attributes", "_ignored", skipAttributes());
     }
 
+    @Test
+    void testBomIsSkipped() {
+        doTest("unexpectedbom");
+    }
+
     private LanguagePropertyConfig ignoreUsings() {
         return properties(true, false, false);
     }
