@@ -49,4 +49,9 @@ class MatlabCpdLexerTest extends CpdTextComparisonTest {
     void testTabWidth() {
         doTest("tabWidth");
     }
+
+    @Test
+    void testBackslash() {
+        doTest("stringsWithBackslash");
+    }
 }
