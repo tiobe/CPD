@@ -9,6 +9,9 @@ import net.sourceforge.pmd.lang.powershell.ast.PowershellLexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Lexer;
 
+/**
+ * The PowerShell tokenizer.
+ */
 public class PowershellCpdLexer extends AntlrCpdLexer {
 
     @Override

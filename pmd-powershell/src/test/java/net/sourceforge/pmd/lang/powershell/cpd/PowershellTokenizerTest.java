@@ -8,28 +8,28 @@ import org.junit.jupiter.api.Test;
 
 import net.sourceforge.pmd.lang.test.cpd.CpdTextComparisonTest;
 
-public class PowershellTokenizerTest extends CpdTextComparisonTest {
-    public PowershellTokenizerTest() {
+class PowershellTokenizerTest extends CpdTextComparisonTest {
+    PowershellTokenizerTest() {
         super("powershell", ".ps1");
     }
 
     @Test
-    public void testInitMachine() {
+    void testInitMachine() {
         doTest("Initialize-Machine-Signed");
     }
 
     @Test
-    public void testInstallVS() {
+    void testInstallVS() {
         doTest("Install-VS");
     }
 
     @Test
-    public void testStringLiterals() {
+    void testStringLiterals() {
         doTest("String-Literal-Test");
     }
 
     @Test
-    public void testExpStringDollarEnd() {
+    void testExpStringDollarEnd() {
         doTest("Regex-Interp");
     }
 }
