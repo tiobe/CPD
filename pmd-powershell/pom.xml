@@ -47,6 +47,16 @@
                     </delimiters>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.github.siom79.japicmp</groupId>
+                <artifactId>japicmp-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>japicmp</id>
+                        <phase>none</phase>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
     </build>
     <dependencies>
