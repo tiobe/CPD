@@ -1,0 +1,47 @@
+    [Image] or [Truncated image[            Bcol      Ecol
+L1
+    ["]                                     1         2
+    [This string contains a subexpressi[    2         39
+    [$(]                                    39        41
+    [$subExprVat]                           41        52
+    [+]                                     53        54
+    ["]                                     55        56
+    [with an inner expandable string ]      56        88
+    [$innerVar]                             88        97
+    [ ]                                     97        98
+    [$(]                                    98        100
+    [SubExpr]                               100       107
+    [$innerSubexprVar]                      108       124
+    [)]                                     124       125
+    ["]                                     125       126
+    [)]                                     126       127
+    [ which has more variables]             127       152
+    ["]                                     152       153
+L2
+    [@"]                                    1         3
+    [\nThis here-string contains double[    3         63
+L3
+    [$(]                                    63        65
+    [$subExprVat]                           65        76
+    [+]                                     77        78
+    ["]                                     79        80
+    [with an inner expandable string ]      80        112
+    [$innerVar]                             112       121
+    [ ]                                     121       122
+    [$(]                                    122       124
+    [SubExpr]                               124       131
+    [$innerSubexprVar]                      132       148
+    [)]                                     148       149
+    ["]                                     149       150
+    [)]                                     150       151
+    [ which has more variables"\n]          151       178
+L4
+    ["@]                                    1         3
+L5
+    ['This string contains a subexpress[    1         153
+L6
+    [@']                                    1         3
+    [\nThis here-string contains double[    3         178
+L8
+    ['@]                                    1         3
+EOF
