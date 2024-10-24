@@ -60,4 +60,9 @@ class MatlabCpdLexerTest extends CpdTextComparisonTest {
     void testFormFeed() {
         doTest("formFeed");
     }
+    
+    @Test
+    void testBackslash() {
+        doTest("stringsWithBackslash");
+    }
 }
