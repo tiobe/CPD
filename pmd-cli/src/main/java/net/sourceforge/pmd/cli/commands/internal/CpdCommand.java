@@ -116,6 +116,7 @@ public class CpdCommand extends AbstractAnalysisPmdSubcommand<CPDConfiguration> 
         configuration.setIgnoreIdentifiers(ignoreIdentifiers);
         configuration.setIgnoreLiterals(ignoreLiterals);
         configuration.setIgnoreLiteralSequences(ignoreLiteralSequences);
+        configuration.setIgnoreIdentifierAndLiteralSequences(ignoreIdentifierAndLiteralSequences);
         configuration.setIgnoreUsings(ignoreUsings);
         configuration.setOnlyRecognizeLanguage(language);
         configuration.setMinimumTileSize(minimumTokens);

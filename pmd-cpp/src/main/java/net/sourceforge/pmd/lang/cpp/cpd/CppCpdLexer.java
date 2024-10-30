@@ -31,12 +31,12 @@ public class CppCpdLexer extends CpdLexerBase<JavaccToken> {
     private boolean skipBlocks;
     private Pattern skipBlocksStart;
     private Pattern skipBlocksEnd;
-    private final boolean ignoreIdentifierAndLiteralSeqences;
+    private final boolean ignoreIdentifierAndLiteralSequences;
     private final boolean ignoreLiteralSequences;
 
     public CppCpdLexer(LanguagePropertyBundle cppProperties) {
         ignoreLiteralSequences = cppProperties.getProperty(CpdLanguageProperties.CPD_IGNORE_LITERAL_SEQUENCES);
-        ignoreIdentifierAndLiteralSeqences = cppProperties.getProperty(CpdLanguageProperties.CPD_IGNORE_LITERAL_AND_IDENTIFIER_SEQUENCES);
+        ignoreIdentifierAndLiteralSequences = cppProperties.getProperty(CpdLanguageProperties.CPD_IGNORE_LITERAL_AND_IDENTIFIER_SEQUENCES);
         String skipBlocksPattern = cppProperties.getProperty(CppLanguageModule.CPD_SKIP_BLOCKS);
         if (StringUtils.isNotBlank(skipBlocksPattern)) {
             skipBlocks = true;
@@ -70,19 +70,19 @@ public class CppCpdLexer extends CpdLexerBase<JavaccToken> {
 
     @Override
     protected TokenManager<JavaccToken> filterTokenStream(final TokenManager<JavaccToken> tokenManager) {
-        return new CppTokenFilter(tokenManager, ignoreLiteralSequences, ignoreIdentifierAndLiteralSeqences);
+        return new CppTokenFilter(tokenManager, ignoreLiteralSequences, ignoreIdentifierAndLiteralSequences);
     }
 
     private static class CppTokenFilter extends JavaCCTokenFilter {
 
         private final boolean ignoreLiteralSequences;
-        private final boolean ignoreIdentifierAndLiteralSeqences;
+        private final boolean ignoreIdentifierAndLiteralSequences;
         private JavaccToken discardingTokensUntil = null;
         private boolean discardCurrent = false;
 
-        CppTokenFilter(final TokenManager<JavaccToken> tokenManager, final boolean ignoreLiteralSequences, final boolean ignoreIdentifierAndLiteralSeqences) {
+        CppTokenFilter(final TokenManager<JavaccToken> tokenManager, final boolean ignoreLiteralSequences, final boolean ignoreIdentifierAndLiteralSequences) {
             super(tokenManager);
-            this.ignoreIdentifierAndLiteralSeqences = ignoreIdentifierAndLiteralSeqences;
+            this.ignoreIdentifierAndLiteralSequences = ignoreIdentifierAndLiteralSequences;
             this.ignoreLiteralSequences = ignoreLiteralSequences;
         }
 
@@ -93,7 +93,7 @@ public class CppCpdLexer extends CpdLexerBase<JavaccToken> {
         }
 
         private void skipSequences(final JavaccToken currentToken, final Iterable<JavaccToken> remainingTokens) {
-            if (ignoreLiteralSequences || ignoreIdentifierAndLiteralSeqences) {
+            if (ignoreLiteralSequences || ignoreIdentifierAndLiteralSequences) {
                 final int kind = currentToken.getKind();
                 if (isDiscardingToken()) {
                     if (currentToken == discardingTokensUntil) { // NOPMD - intentional check for reference equality
@@ -101,12 +101,45 @@ public class CppCpdLexer extends CpdLexerBase<JavaccToken> {
                         discardCurrent = true;
                     }
                 } else if (kind == CppTokenKinds.LCURLYBRACE) {
-                    discardingTokensUntil = findEndOfSequenceToDiscard(remainingTokens, ignoreIdentifierAndLiteralSeqences);
+                    discardingTokensUntil = findEndOfLiteralAndIdentifierSequenceToDiscard(remainingTokens, ignoreIdentifierAndLiteralSequences);
+                } else if (kind == CppTokenKinds.ASSIGNEQUAL && ignoreIdentifierAndLiteralSequences) {
+                    discardingTokensUntil = findEndOfSequenceInitializationToDiscard(remainingTokens);
                 }
             }
         }
 
-        private static JavaccToken findEndOfSequenceToDiscard(final Iterable<JavaccToken> remainingTokens, boolean ignoreIdentifierAndLiteralSeqences) {
+        /**
+         * Skip array initialization for sequences of any kind (not just literals/identifiers)
+         */
+        private static JavaccToken findEndOfSequenceInitializationToDiscard(final Iterable<JavaccToken> remainingTokens) {
+            JavaccToken firstToken = remainingTokens.iterator().next();
+            int braceCount = 0;
+
+            if (firstToken.kind == CppTokenKinds.LCURLYBRACE) {
+                for (final JavaccToken token : remainingTokens) {
+                    switch (token.getKind()) {
+                    case CppTokenKinds.LCURLYBRACE:
+                        braceCount++;
+                        break; // curly braces are allowed, as long as they're balanced
+                    case CppTokenKinds.RCURLYBRACE:
+                        braceCount--;
+                        if (braceCount <= 0) {
+                            return token;
+                        } else {
+                            break;
+                        }
+                    case CppTokenKinds.EOF:
+                    case CppTokenKinds.SEMICOLON:
+                        return null;
+                    default:
+                        break;
+                    }
+                }
+            }
+            return null;
+        }
+
+        private static JavaccToken findEndOfLiteralAndIdentifierSequenceToDiscard(final Iterable<JavaccToken> remainingTokens, boolean ignoreIdentifierAndLiteralSequences) {
             boolean seenAllowedToken = false;
             int braceCount = 0;
             for (final JavaccToken token : remainingTokens) {
@@ -122,7 +155,7 @@ public class CppCpdLexer extends CpdLexerBase<JavaccToken> {
                     break; // can be skipped; continue to the next token
                 case CppTokenKinds.ID:
                     // Ignore identifiers if instructed
-                    if (ignoreIdentifierAndLiteralSeqences) {
+                    if (ignoreIdentifierAndLiteralSequences) {
                         seenAllowedToken = true;
                         break; // can be skipped; continue to the next token
                     } else {

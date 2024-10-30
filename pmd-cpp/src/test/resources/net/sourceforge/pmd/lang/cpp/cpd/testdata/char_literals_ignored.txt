@@ -1,0 +1,26 @@
+    [Image] or [Truncated image[            Bcol      Ecol
+L1
+    [static]                                1         7
+    [char]                                  8         12
+    [char_array]                            13        23
+    [\[]                                    23        24
+    [137]                                   24        27
+    [\]]                                    27        28
+L10
+    [;]                                     2         3
+L12
+    [static]                                1         7
+    [struct]                                8         14
+    [struct_foo]                            15        25
+    [my_struct]                             26        35
+L13
+    [;]                                     67        68
+L16
+    [static]                                1         7
+    [const]                                 8         13
+    [short]                                 14        19
+    [foo]                                   20        23
+    [=]                                     24        25
+    [BAR]                                   26        29
+    [;]                                     29        30
+EOF
