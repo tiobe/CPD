@@ -28,7 +28,7 @@ class CCpdLexerTest extends CpdTextComparisonTest {
 
     private void testNormalAndIgnored(String baseFilename) {
         doTest(baseFilename, "", defaultProperties());
-        doTest(baseFilename, "_ignored", skipIdentifierAndLiteralsSequences());
+        doTest(baseFilename, "_ignored", skipSequenceInitializations());
     }
 
     @Test
@@ -48,30 +48,22 @@ class CCpdLexerTest extends CpdTextComparisonTest {
 
 
     private static LanguagePropertyConfig skipBlocks(String skipPattern) {
-        return properties(true, skipPattern, false, false);
-    }
-
-    private static LanguagePropertyConfig skipBlocks() {
-        return skipBlocks(null);
+        return properties(true, skipPattern, false, false, false);
     }
 
     private static LanguagePropertyConfig dontSkipBlocks() {
-        return properties(false, null, false, false);
+        return properties(false, null, false, false, false);
     }
 
-    private static LanguagePropertyConfig skipLiteralSequences() {
-        return properties(false, null, true, false);
+    private static LanguagePropertyConfig skipSequenceInitializations() {
+        return properties(false, null, false, false, true);
     }
 
-    private static LanguagePropertyConfig skipIdentifierAndLiteralsSequences() {
-        return properties(false, null, true, true);
-    }
-
-    private static LanguagePropertyConfig skipIdentifierSequences() {
-        return properties(false, null, false, true);
-    }
-
-    private static LanguagePropertyConfig properties(boolean skipBlocks, String skipPattern, boolean skipLiteralSequences, boolean skipSequences) {
+    private static LanguagePropertyConfig properties(boolean skipBlocks,
+                                                     String skipPattern,
+                                                     boolean skipLiteralSequences,
+                                                     boolean skipLiteralAndIdentifierSequences,
+                                                     boolean skipSequenceInitializations) {
         return properties -> {
             if (!skipBlocks) {
                 properties.setProperty(CppLanguageModule.CPD_SKIP_BLOCKS, "");
@@ -79,7 +71,8 @@ class CCpdLexerTest extends CpdTextComparisonTest {
                 properties.setProperty(CppLanguageModule.CPD_SKIP_BLOCKS, skipPattern);
             }
             properties.setProperty(CpdLanguageProperties.CPD_IGNORE_LITERAL_SEQUENCES, skipLiteralSequences);
-            properties.setProperty(CpdLanguageProperties.CPD_IGNORE_LITERAL_AND_IDENTIFIER_SEQUENCES, skipSequences);
+            properties.setProperty(CpdLanguageProperties.CPD_IGNORE_LITERAL_AND_IDENTIFIER_SEQUENCES, skipLiteralAndIdentifierSequences);
+            properties.setProperty(CpdLanguageProperties.CPD_IGNORE_SEQUENCE_INITIALIZATION, skipSequenceInitializations);
         };
     }
 }

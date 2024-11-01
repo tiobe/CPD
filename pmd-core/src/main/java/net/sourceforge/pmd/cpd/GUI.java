@@ -118,6 +118,9 @@ public class GUI implements CPDListener {
             return getLanguage().newPropertyBundle().hasDescriptor(CpdLanguageProperties.CPD_IGNORE_LITERAL_AND_IDENTIFIER_SEQUENCES);
         }
 
+        public boolean canIgnoreSequenceInitalization() {
+            return getLanguage().newPropertyBundle().hasDescriptor(CpdLanguageProperties.CPD_IGNORE_SEQUENCE_INITIALIZATION);
+        }
     }
 
     private static final List<LanguageConfig> LANGUAGE_SETS;
@@ -334,6 +337,7 @@ public class GUI implements CPDListener {
     private final JCheckBox ignoreUsingsCheckbox = new JCheckBox("", false);
     private final JCheckBox ignoreLiteralSequencesCheckbox = new JCheckBox("", false);
     private final JCheckBox ignoreIdentifierAndLiteralSequencesCheckbox = new JCheckBox("", false);
+    private final JCheckBox ignoreSequenceInitalizationsCheckbox = new JCheckBox("", false);
     private final JComboBox<String> languageBox = new JComboBox<>();
     private final JTextField extensionField = new JTextField();
     private final JLabel extensionLabel = new JLabel("Extension:", SwingConstants.RIGHT);
@@ -427,6 +431,7 @@ public class GUI implements CPDListener {
         ignoreUsingsCheckbox.setEnabled(current.canIgnoreUsings());
         ignoreLiteralSequencesCheckbox.setEnabled(current.canIgnoreLiteralSequences());
         ignoreIdentifierAndLiteralSequencesCheckbox.setEnabled(current.canIgnoreIdentifierAndLiteralSequences());
+        ignoreSequenceInitalizationsCheckbox.setEnabled(current.canIgnoreSequenceInitalization());
         boolean enableExtension = current.canUseCustomExtension();
         if (enableExtension) {
             extensionField.setText("");
@@ -492,22 +497,29 @@ public class GUI implements CPDListener {
         helper.nextRow();
         helper.addLabel("Ignore literal sequences?");
         helper.add(ignoreLiteralSequencesCheckbox);
-        helper.add(goButton);
-        helper.add(cxButton);
+        helper.addLabel("");
+        helper.addLabel("");
         helper.nextRow();
 
         helper.nextRow();
         helper.addLabel("Ignore identifier and literal sequences?");
         helper.add(ignoreIdentifierAndLiteralSequencesCheckbox);
-        helper.add(goButton);
-        helper.add(cxButton);
+        helper.addLabel("");
+        helper.addLabel("");
+        helper.nextRow();
+
+        helper.nextRow();
+        helper.addLabel("Ignore sequence initalizations?");
+        helper.add(ignoreSequenceInitalizationsCheckbox);
+        helper.addLabel("");
+        helper.addLabel("");
         helper.nextRow();
 
         helper.addLabel("File encoding (defaults based upon locale):");
         encodingField.setColumns(1);
         helper.add(encodingField);
-        helper.addLabel("");
-        helper.addLabel("");
+        helper.add(goButton);
+        helper.add(cxButton);
         helper.nextRow();
         // settingsPanel.setBorder(BorderFactory.createTitledBorder("Settings"));
         return settingsPanel;
@@ -660,6 +672,7 @@ public class GUI implements CPDListener {
             config.setIgnoreUsings(ignoreUsingsCheckbox.isSelected());
             config.setIgnoreLiteralSequences(ignoreLiteralSequencesCheckbox.isSelected());
             config.setIgnoreIdentifierAndLiteralSequences(ignoreIdentifierAndLiteralSequencesCheckbox.isSelected());
+            config.setIgnoreSequenceInitializations(ignoreSequenceInitalizationsCheckbox.isSelected());
             if (extensionField.isEnabled()) {
                 CUSTOM_EXTENSION_LANG.setExtension(extensionField.getText());
             }
