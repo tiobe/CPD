@@ -71,7 +71,7 @@ public class CpdCommand extends AbstractAnalysisPmdSubcommand<CPDConfiguration> 
 
     @Option(names = "--ignore-sequences",
             arity = "0..1",
-            description = "Types of sequences to exclude from duplication.%nValid values: ${COMPLETION-CANDIDATES}",
+            description = "Type of sequences to exclude from duplication.%nValid values: ${COMPLETION-CANDIDATES}",
             converter = CpdIgnoreTypeSupport.class,
             completionCandidates = CpdIgnoreTypeSupport.class,
             fallbackValue = "literals-identifiers")

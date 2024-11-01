@@ -42,7 +42,7 @@ refactored out. We thus advise developers to use CPD to **help remove duplicates
 
 ### Refactoring duplicates
 
-Once you have located some duplicates, several refactoring strategies may apply depending of the scope and extent of
+Once you have located some duplicates, several refactoring strategies may apply depending on the scope and extent of
 the duplication. Here's a quick summary:
 
 * If the duplication is local to a method or single class:
@@ -180,9 +180,12 @@ exactly identical.
                             By default, annotations are not ignored."
                languages="C#, Java"
     %}
-    {% include custom/cli_option_row.html options="--ignore-sequences"
-               description="Ignore sequences of identifier and literals.
-                            By default, such sequences are not ignored."
+    {% include custom/cli_option_row.html options="--ignore-sequences" 
+               option_arg="type"
+               description="Ignore sequences. Types of sequences ignored can be specified in `type` 
+               (if no parameter is provided, defaults to `literals-identifiers`).
+               See available options [here](#sequence-exclusion).
+               This option can be repeated to configure more than one type of sequence exclusion." 
                languages="C++"
     %}
     {% include custom/cli_option_row.html options="--ignore-usings"
@@ -356,6 +359,14 @@ to be "debug".
 * vs
 
 For details, see [CPD Report Formats](pmd_userdocs_cpd_report_formats.html).
+
+## Sequence exclusion
+
+Several strategies are available for the exclusion of lists from being marked as duplicates:
+
+* `literals-identifiers` (Default) skip lists containing literals and identifiers.
+* `literals` skip lists containing only literal elements. This is equivalent to `--ignore-literal-sequences`.
+* `initializations` skip all list initializations, regardless of their content.
 
 ## Ant task
 
