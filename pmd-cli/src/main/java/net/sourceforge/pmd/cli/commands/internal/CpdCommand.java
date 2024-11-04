@@ -7,7 +7,7 @@ package net.sourceforge.pmd.cli.commands.internal;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -75,7 +75,7 @@ public class CpdCommand extends AbstractAnalysisPmdSubcommand<CPDConfiguration> 
             converter = CpdIgnoreSequenceTypeSupport.class,
             completionCandidates = CpdIgnoreSequenceTypeSupport.class,
             fallbackValue = "literals-identifiers")
-    private Set<CPDSequenceIgnoreType> sequenceIgnoreTypes = new HashSet<>();
+    private Set<CPDSequenceIgnoreType> sequenceIgnoreTypes = EnumSet.noneOf(CPDSequenceIgnoreType.class);
 
     /**
      * @deprecated Use {@link #failOnError} instead.
