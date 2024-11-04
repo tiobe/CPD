@@ -5,9 +5,10 @@
 package net.sourceforge.pmd.cpd;
 
 import java.util.EnumSet;
+import java.util.Set;
 
 public class CPDSequenceIgnoreSetting {
-    private EnumSet<CPDSequenceIgnoreType> setting = EnumSet.noneOf(CPDSequenceIgnoreType.class);
+    private Set<CPDSequenceIgnoreType> setting = EnumSet.noneOf(CPDSequenceIgnoreType.class);
 
     public void setValue(CPDSequenceIgnoreType type, boolean value) {
         if (value) {
