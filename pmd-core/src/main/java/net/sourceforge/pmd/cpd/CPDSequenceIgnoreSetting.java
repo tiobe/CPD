@@ -7,18 +7,21 @@ package net.sourceforge.pmd.cpd;
 import java.util.EnumSet;
 import java.util.Set;
 
+/**
+ * Combined setting for 'ignore-sequence' variants (see {@link CPDSequenceIgnoreType}),
+ */
 public class CPDSequenceIgnoreSetting {
-    private Set<CPDSequenceIgnoreType> setting = EnumSet.noneOf(CPDSequenceIgnoreType.class);
+    private Set<CPDSequenceIgnoreType> enabledIgnoreSequenceTypes = EnumSet.noneOf(CPDSequenceIgnoreType.class);
 
     public void setValue(CPDSequenceIgnoreType type, boolean value) {
         if (value) {
-            setting.add(type);
+            enabledIgnoreSequenceTypes.add(type);
         } else {
-            setting.remove(type);
+            enabledIgnoreSequenceTypes.remove(type);
         }
     }
 
     public boolean getValue(CPDSequenceIgnoreType type) {
-        return setting.contains(type);
+        return enabledIgnoreSequenceTypes.contains(type);
     }
 }
