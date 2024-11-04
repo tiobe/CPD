@@ -65,14 +65,14 @@ class CpdCommandTest extends BaseCommandTest<CpdCommand> {
     }
 
     @ParameterizedTest
-    @MethodSource("ignoreArgs")
-    void testIgnoreOption(String[] args, ExpectedIgnoreOptions ignore) {
+    @MethodSource("ignoreSequencesTestArgs")
+    void testIgnoreSequencesOption(String[] args, ExpectedIgnoreOptions ignore) {
         final CpdCommand cmd = setupAndParse(args);
         CPDConfiguration config = cmd.toConfiguration();
-        assertIgnore(config, ignore);
+        assertIgnoreSequenceOptions(config, ignore);
     }
 
-    static Collection<Arguments> ignoreArgs() {
+    static Collection<Arguments> ignoreSequencesTestArgs() {
         Collection<Arguments> args = new ArrayList<Arguments>();
         args.add(Arguments.of(
                 new String[] {
@@ -110,7 +110,17 @@ class CpdCommandTest extends BaseCommandTest<CpdCommand> {
                 },
                 new ExpectedIgnoreOptions(false, false, true, false)
         ));
+        args.add(Arguments.of(
+            new String[] { },
+            new ExpectedIgnoreOptions(false, false, false, false)
+        ));
         return args;
+    }
+
+    void assertIgnoreSequenceOptions(CPDConfiguration config, ExpectedIgnoreOptions exp) {
+        assertEquals(config.isIgnoreLiteralSequences(), exp.literalSequences, "Expected isIgnoreLiteralSequences() to be " + exp.literalSequences);
+        assertEquals(config.isIgnoreIdentifierAndLiteralSequences(), exp.identifierSequences, "Expected isIgnoreLiteralAndIdentifierSequences() to be " + exp.identifierSequences);
+        assertEquals(config.isIgnoreSequenceInitializations(), exp.arrayInitializations, "Expected isIgnoreArrayInitializations() to be " + exp.arrayInitializations);
     }
 
     static class ExpectedIgnoreOptions {
@@ -131,13 +141,6 @@ class CpdCommandTest extends BaseCommandTest<CpdCommand> {
             this.arrayInitializations = arrayInitializations;
         }
     }
-
-    void assertIgnore(CPDConfiguration config, ExpectedIgnoreOptions exp) {
-        assertEquals(config.isIgnoreLiteralSequences(), exp.literalSequences, "Expected isIgnoreLiteralSequences() to be " + exp.literalSequences);
-        assertEquals(config.isIgnoreIdentifierAndLiteralSequences(), exp.identifierSequences, "Expected isIgnoreLiteralAndIdentifierSequences() to be " + exp.identifierSequences);
-        assertEquals(config.isIgnoreSequenceInitializations(), exp.arrayInitializations, "Expected isIgnoreArrayInitializations() to be " + exp.arrayInitializations);
-    }
-
 
     @Override
     protected CpdCommand createCommand() {

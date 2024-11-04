@@ -12,7 +12,7 @@ import net.sourceforge.pmd.cpd.CPDSequenceIgnoreType;
 import picocli.CommandLine.ITypeConverter;
 import picocli.CommandLine.TypeConversionException;
 
-public class CpdIgnoreTypeSupport implements ITypeConverter<CPDSequenceIgnoreType>, Iterable<String> {
+public class CpdIgnoreSequenceTypeSupport implements ITypeConverter<CPDSequenceIgnoreType>, Iterable<String> {
 
     @Override
     public Iterator<String> iterator() {
@@ -24,6 +24,6 @@ public class CpdIgnoreTypeSupport implements ITypeConverter<CPDSequenceIgnoreTyp
         return Arrays.stream(CPDSequenceIgnoreType.values())
                 .filter(t -> t.getName().equalsIgnoreCase(s))
                 .findFirst()
-                .orElseThrow(() -> new TypeConversionException("Invalid ignore option: " + s));
+                .orElseThrow(() -> new TypeConversionException("Invalid sequence type: " + s));
     }
 }

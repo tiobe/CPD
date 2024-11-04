@@ -15,7 +15,7 @@ import java.util.Set;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
-import net.sourceforge.pmd.cli.commands.typesupport.internal.CpdIgnoreTypeSupport;
+import net.sourceforge.pmd.cli.commands.typesupport.internal.CpdIgnoreSequenceTypeSupport;
 import net.sourceforge.pmd.cli.commands.typesupport.internal.CpdLanguageTypeSupport;
 import net.sourceforge.pmd.cli.internal.CliExitCode;
 import net.sourceforge.pmd.cpd.CPDConfiguration;
@@ -72,8 +72,8 @@ public class CpdCommand extends AbstractAnalysisPmdSubcommand<CPDConfiguration> 
     @Option(names = "--ignore-sequences",
             arity = "0..1",
             description = "Type of sequences to exclude from duplication.%nValid values: ${COMPLETION-CANDIDATES}",
-            converter = CpdIgnoreTypeSupport.class,
-            completionCandidates = CpdIgnoreTypeSupport.class,
+            converter = CpdIgnoreSequenceTypeSupport.class,
+            completionCandidates = CpdIgnoreSequenceTypeSupport.class,
             fallbackValue = "literals-identifiers")
     private Set<CPDSequenceIgnoreType> sequenceIgnoreTypes = new HashSet<>();
 

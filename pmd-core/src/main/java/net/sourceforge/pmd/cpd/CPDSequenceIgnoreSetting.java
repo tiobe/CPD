@@ -4,19 +4,20 @@
 
 package net.sourceforge.pmd.cpd;
 
+import java.util.EnumSet;
+
 public class CPDSequenceIgnoreSetting {
-    private int setting = 0;
+    private EnumSet<CPDSequenceIgnoreType> setting = EnumSet.noneOf(CPDSequenceIgnoreType.class);
 
     public void setValue(CPDSequenceIgnoreType type, boolean value) {
-        int index = type.ordinal();
         if (value) {
-            setting |= (1 << index);
+            setting.add(type);
         } else {
-            setting &= ~(1 << index);
+            setting.remove(type);
         }
     }
 
     public boolean getValue(CPDSequenceIgnoreType type) {
-        return (setting & (1 << type.ordinal())) != 0;
+        return setting.contains(type);
     }
 }
