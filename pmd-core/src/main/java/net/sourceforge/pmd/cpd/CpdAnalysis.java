@@ -122,6 +122,7 @@ public final class CpdAnalysis implements AutoCloseable {
         setPropertyIfMissing(CpdLanguageProperties.CPD_IGNORE_IMPORTS, props, configuration.isIgnoreUsings());
         setPropertyIfMissing(CpdLanguageProperties.CPD_IGNORE_LITERAL_SEQUENCES, props, configuration.isIgnoreLiteralSequences());
         setPropertyIfMissing(CpdLanguageProperties.CPD_IGNORE_LITERAL_AND_IDENTIFIER_SEQUENCES, props, configuration.isIgnoreIdentifierAndLiteralSequences());
+        setPropertyIfMissing(CpdLanguageProperties.CPD_IGNORE_SEQUENCE_INITIALIZATION, props, configuration.isIgnoreSequenceInitializations());
         if (!configuration.isNoSkipBlocks()) {
             // see net.sourceforge.pmd.lang.cpp.CppLanguageModule.CPD_SKIP_BLOCKS
             PropertyDescriptor<String> skipBlocks = (PropertyDescriptor) props.getPropertyDescriptor("cpdSkipBlocksPattern");

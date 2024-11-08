@@ -62,9 +62,7 @@ public class CPDConfiguration extends AbstractConfiguration {
 
     private boolean ignoreUsings;
 
-    private boolean ignoreLiteralSequences = false;
-
-    private boolean ignoreIdentifierAndLiteralSequences = false;
+    private CPDSequenceIgnoreSetting ignoreSequences = new CPDSequenceIgnoreSetting();
 
     @Deprecated
     // Note: The default value was false until up to 7.3.0 and is true since 7.4.0
@@ -181,6 +179,10 @@ public class CPDConfiguration extends AbstractConfiguration {
         this.cpdReportRenderer = renderer;
     }
 
+    public void setIgnoreSequences(CPDSequenceIgnoreSetting value) {
+        this.ignoreSequences = value;
+    }
+
     public boolean isIgnoreLiterals() {
         return ignoreLiterals;
     }
@@ -214,19 +216,27 @@ public class CPDConfiguration extends AbstractConfiguration {
     }
 
     public boolean isIgnoreLiteralSequences() {
-        return ignoreLiteralSequences;
+        return ignoreSequences.getValue(CPDSequenceIgnoreType.LITERALS);
     }
 
     public void setIgnoreLiteralSequences(boolean ignoreLiteralSequences) {
-        this.ignoreLiteralSequences = ignoreLiteralSequences;
+        ignoreSequences.setValue(CPDSequenceIgnoreType.LITERALS, ignoreLiteralSequences);
     }
 
     public boolean isIgnoreIdentifierAndLiteralSequences() {
-        return ignoreIdentifierAndLiteralSequences;
+        return ignoreSequences.getValue(CPDSequenceIgnoreType.LITERALS_IDENTIFIERS);
     }
 
     public void setIgnoreIdentifierAndLiteralSequences(boolean ignoreIdentifierAndLiteralSequences) {
-        this.ignoreIdentifierAndLiteralSequences = ignoreIdentifierAndLiteralSequences;
+        ignoreSequences.setValue(CPDSequenceIgnoreType.LITERALS_IDENTIFIERS, ignoreIdentifierAndLiteralSequences);
+    }
+
+    public boolean isIgnoreSequenceInitializations() {
+        return ignoreSequences.getValue(CPDSequenceIgnoreType.INITIALIZATIONS);
+    }
+
+    public void setIgnoreSequenceInitializations(boolean ignoreSequenceInitializations) {
+        ignoreSequences.setValue(CPDSequenceIgnoreType.INITIALIZATIONS, ignoreSequenceInitializations);
     }
 
     /**

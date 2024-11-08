@@ -47,4 +47,9 @@ public final class CpdLanguageProperties {
                        .defaultValue(false)
                        .desc("Ignore metadata such as Java annotations or C# attributes.")
                        .build();
+    public static final PropertyDescriptor<Boolean> CPD_IGNORE_SEQUENCE_INITIALIZATION =
+        PropertyFactory.booleanProperty("cpdIgnoreSequenceInitialization")
+                       .defaultValue(false)
+                       .desc("Ignore sequence initializations.")
+                       .build();
 }

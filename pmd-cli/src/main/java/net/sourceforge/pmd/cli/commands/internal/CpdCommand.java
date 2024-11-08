@@ -7,15 +7,19 @@ package net.sourceforge.pmd.cli.commands.internal;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import net.sourceforge.pmd.cli.commands.typesupport.internal.CpdIgnoreSequenceTypeSupport;
 import net.sourceforge.pmd.cli.commands.typesupport.internal.CpdLanguageTypeSupport;
 import net.sourceforge.pmd.cli.internal.CliExitCode;
 import net.sourceforge.pmd.cpd.CPDConfiguration;
+import net.sourceforge.pmd.cpd.CPDSequenceIgnoreType;
 import net.sourceforge.pmd.cpd.CpdAnalysis;
 import net.sourceforge.pmd.cpd.internal.CpdLanguagePropertiesDefaults;
 import net.sourceforge.pmd.internal.LogMessages;
@@ -65,8 +69,13 @@ public class CpdCommand extends AbstractAnalysisPmdSubcommand<CPDConfiguration> 
     @Option(names = "--ignore-literal-sequences", description = "Ignore sequences of literals such as list initializers.")
     private boolean ignoreLiteralSequences;
 
-    @Option(names = "--ignore-sequences", description = "Ignore sequences of identifiers and literals")
-    private boolean ignoreIdentifierAndLiteralSequences;
+    @Option(names = "--ignore-sequences",
+            arity = "0..1",
+            description = "Type of sequences to exclude from duplication.%nValid values: ${COMPLETION-CANDIDATES}",
+            converter = CpdIgnoreSequenceTypeSupport.class,
+            completionCandidates = CpdIgnoreSequenceTypeSupport.class,
+            fallbackValue = "literals-identifiers")
+    private Set<CPDSequenceIgnoreType> sequenceIgnoreTypes = EnumSet.noneOf(CPDSequenceIgnoreType.class);
 
     /**
      * @deprecated Use {@link #failOnError} instead.
@@ -115,7 +124,9 @@ public class CpdCommand extends AbstractAnalysisPmdSubcommand<CPDConfiguration> 
         configuration.setIgnoreAnnotations(ignoreAnnotations);
         configuration.setIgnoreIdentifiers(ignoreIdentifiers);
         configuration.setIgnoreLiterals(ignoreLiterals);
-        configuration.setIgnoreLiteralSequences(ignoreLiteralSequences);
+        configuration.setIgnoreLiteralSequences(ignoreLiteralSequences || sequenceIgnoreTypes.contains(CPDSequenceIgnoreType.LITERALS));
+        configuration.setIgnoreIdentifierAndLiteralSequences(sequenceIgnoreTypes.contains(CPDSequenceIgnoreType.LITERALS_IDENTIFIERS));
+        configuration.setIgnoreSequenceInitializations(sequenceIgnoreTypes.contains(CPDSequenceIgnoreType.INITIALIZATIONS));
         configuration.setIgnoreUsings(ignoreUsings);
         configuration.setOnlyRecognizeLanguage(language);
         configuration.setMinimumTileSize(minimumTokens);
