@@ -1334,6 +1334,7 @@
 
     <modules>
         <module>pmd-apex</module>
+        <module>pmd-awl</module>
         <module>pmd-coco</module>
         <module>pmd-core</module>
         <module>pmd-cpp</module>
