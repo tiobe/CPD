@@ -1,0 +1,58 @@
+// Combined some publicly available AWL/STL examples (good enough for lexer-only test)
+// from STL reference document 'Statement List (STL) for S7-300 and S7-400 Programming'
+// https://cache.industry.siemens.com/dl/files/814/109751814/att_933093/v1/STEP_7_-_Statement_List_for_S7-300_and_S7-400.pdf
+
+FUNCTION_BLOCK "fb1"
+TITLE = %version: 1 % Title information is present here % $ ^ \
+{ this_is_false := 'FALSE' }
+FAMILY : Fam1
+VERSION : 0.0
+
+// Input variables
+   VAR_INPUT
+      i_ID : DWord;   // Var 1
+      CFG_Position_node : Int;
+   END_VAR
+
+// Output variables
+   VAR_OUTPUT
+      output_var_1 : Bool;
+      output_var_2 : Int;
+      output_var_3 : Bool;
+   END_VAR
+
+// Example: Statement List to control the Conveyor Belt
+O I 1.1 //Pressing either start switch turns the motor on.
+O I 1.3
+S Q 4.0
+O I 1.2 //Pressing either stop switch or opening the normally closed contact at
+//the end of the belt turns the motor off.
+O I 1.4
+ON I 1.5
+R Q 4.0
+
+// Example: Statement List to Generate a Clock Pulse (pulse duty factor 1:1)
+AN T1 //If timer T 1 has expired,
+L S5T#250ms //load the time value 250 ms into T 1 and
+SV T1 //start T 1 as an extended-pulse timer.
+NOT //Negate (invert) the result of logic operation.
+BEB //If the timer is running, end the current block.
+L MB100 //If the timer has expired, load the contents of memory byte MB100,
+INC 1 //increment the contents by 1,
+T MB100 //and transfer the result to memory byte MB100.
+
+L ID20 //Load contents of ID20 into ACCU 1.
+L ID24 //Load contents of ACCU 1 into ACCU 2. Load contents of ID24 into ACCU
+1.
+AD //Combine bits from ACCU 1 with ACCU 2 by AND, store result in ACCU
+1.
+T MD8 //Transfer result to MD8.
+
+L ID 20 //Load contents of ID20 into ACCU 1.
+AD DW#16#0FFF_EF21 //Combine bits of ACCU 1 with bit pattern of 32-bit constant
+(0000_1111_1111_1111_1110_1111_0010_0001) by AND; store result in
+ACCU 1.
+>=I
+JP NEXT //Jump to NEXT jump label if result is unequal to zero, (CC 1 = 1).
+
+END_FUNCTION_BLOCK
