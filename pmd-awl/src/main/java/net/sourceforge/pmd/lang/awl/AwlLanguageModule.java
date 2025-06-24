@@ -13,7 +13,7 @@ public class AwlLanguageModule extends CpdOnlyLanguageModuleBase {
     private static final String ID = "awl";
 
     public AwlLanguageModule() {
-        super(LanguageMetadata.withId(ID).name("AWL").extensions("awl"));
+        super(LanguageMetadata.withId(ID).name("AWL").extensions("awl", "AWL"));
     }
 
     @Override
