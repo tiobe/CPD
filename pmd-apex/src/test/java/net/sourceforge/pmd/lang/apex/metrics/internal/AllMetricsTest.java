@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -20,9 +20,10 @@ class AllMetricsTest extends SimpleAggregatorTst {
 
     @Override
     public void setUp() {
-        addRule(RULESET, "CycloTest");
-        addRule(RULESET, "WmcTest");
         addRule(RULESET, "CognitiveComplexityTest");
+        addRule(RULESET, "CycloTest");
+        addRule(RULESET, "NcssTest");
+        addRule(RULESET, "WmcTest");
     }
 
     static String formatApexMessage(Node node, Integer result, String defaultMessage) {

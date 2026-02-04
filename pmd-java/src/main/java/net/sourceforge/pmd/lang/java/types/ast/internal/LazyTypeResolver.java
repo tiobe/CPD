@@ -53,7 +53,6 @@ import net.sourceforge.pmd.lang.java.ast.ASTSuperExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTSwitchExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTSwitchLabel;
 import net.sourceforge.pmd.lang.java.ast.ASTSwitchLike;
-import net.sourceforge.pmd.lang.java.ast.ASTTemplateExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTThisExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTType;
 import net.sourceforge.pmd.lang.java.ast.ASTTypeDeclaration;
@@ -95,6 +94,7 @@ import net.sourceforge.pmd.lang.java.types.ast.ExprContext;
 import net.sourceforge.pmd.lang.java.types.ast.ExprContext.ExprContextKind;
 import net.sourceforge.pmd.lang.java.types.internal.infer.Infer;
 import net.sourceforge.pmd.lang.java.types.internal.infer.TypeInferenceLogger;
+import net.sourceforge.pmd.util.AssertionUtil;
 
 /**
  * Resolves types of expressions. This is used as the implementation of
@@ -272,7 +272,9 @@ public final class LazyTypeResolver extends JavaVisitorBase<TypingContext, @NonN
             if (isUnresolved(mirror)) {
                 return ts.UNKNOWN;
             }
-            return mirror.getFormalParameters().get(param.getIndexInParent());
+            JTypeMirror parmty = mirror.getFormalParameters().get(param.getIndexInParent());
+            // project upwards to remove captures
+            return TypeOps.projectUpwards(parmty);
 
         } else if (node.isEnumConstant()) {
 
@@ -438,7 +440,7 @@ public final class LazyTypeResolver extends JavaVisitorBase<TypingContext, @NonN
 
                 JTypeMirror resolved = isUnresolved(lhs) ? rhs : lhs;
                 return resolved.isNumeric() ? unaryNumericPromotion(resolved)
-                                            : resolved == ts.BOOLEAN ? resolved  // NOPMD #3205
+                                            : resolved == ts.BOOLEAN ? resolved
                                                                      : ts.ERROR;
             } else {
                 // anything else, including error types & such: ERROR
@@ -466,18 +468,16 @@ public final class LazyTypeResolver extends JavaVisitorBase<TypingContext, @NonN
             } else {
                 return binaryNumericPromotion(lhs, rhs);
             }
-
-        default:
-            throw new AssertionError("Unknown operator for " + node);
         }
+        throw AssertionUtil.shouldNotReachHere("Unknown operator for " + node);
     }
 
     private boolean isUnresolved(JTypeMirror t) {
-        return t == ts.UNKNOWN;  // NOPMD CompareObjectsWithEquals
+        return t == ts.UNKNOWN;
     }
 
     private boolean isUnresolved(JMethodSig m) {
-        return m == null || m == ts.UNRESOLVED_METHOD;  // NOPMD CompareObjectsWithEquals
+        return m == null || m == ts.UNRESOLVED_METHOD;
     }
 
     @Override
@@ -494,9 +494,8 @@ public final class LazyTypeResolver extends JavaVisitorBase<TypingContext, @NonN
         case POST_INCREMENT:
         case POST_DECREMENT:
             return node.getOperand().getTypeMirror(ctx);
-        default:
-            throw new AssertionError("Unknown operator for " + node);
         }
+        throw AssertionUtil.shouldNotReachHere("Unknown operator for " + node);
     }
 
     @Override
@@ -507,15 +506,6 @@ public final class LazyTypeResolver extends JavaVisitorBase<TypingContext, @NonN
     @Override
     public JTypeMirror visit(ASTCastExpression node, TypingContext ctx) {
         return node.getCastType().getTypeMirror(ctx);
-    }
-
-    @Override
-    public @NonNull JTypeMirror visit(ASTTemplateExpression node, TypingContext data) {
-        if (node.isStringTemplate()) {
-            return stringType;
-        }
-
-        return ts.UNKNOWN;
     }
 
     @Override
@@ -615,7 +605,7 @@ public final class LazyTypeResolver extends JavaVisitorBase<TypingContext, @NonN
                 // then the type of the parameter depends on the type
                 // of the lambda, which most likely depends on the overload
                 // resolution of an enclosing invocation context
-                resultMirror = id.getTypeMirror();
+                resultMirror = id.getTypeMirror(ctx);
             }
         }
 
@@ -651,7 +641,7 @@ public final class LazyTypeResolver extends JavaVisitorBase<TypingContext, @NonN
 
     @Override
     public JTypeMirror visit(ASTFieldAccess node, TypingContext ctx) {
-        JTypeMirror qualifierT = capture(node.getQualifier().getTypeMirror(ctx));
+        JTypeMirror qualifierT = TypeOps.getMemberSource(node.getQualifier().getTypeMirror(ctx));
         if (isUnresolved(qualifierT)) {
             return polyResolution.getContextTypeForStandaloneFallback(node);
         }

@@ -43,7 +43,7 @@ abstract class AbstractCounterCheckRule<T extends PLSQLNode> extends AbstractPLS
 
     private final PropertyDescriptor<Integer> reportLevel =
         CommonPropertyDescriptors.reportLevelProperty()
-                                 .desc("Threshold above which a node is reported")
+                                 .desc("Threshold at or above which a node is reported")
                                  .require(positive())
                                  .defaultValue(defaultReportLevel()).build();
 
@@ -90,8 +90,8 @@ abstract class AbstractCounterCheckRule<T extends PLSQLNode> extends AbstractPLS
         return false;
     }
 
-    protected Object[] getViolationParameters(T node, int metric) {
-        return new Object[] {metric};
+    protected Object[] getViolationParameters(T node, int metric, int limit) {
+        return new Object[] {metric, limit};
     }
 
 
@@ -105,14 +105,19 @@ abstract class AbstractCounterCheckRule<T extends PLSQLNode> extends AbstractPLS
 
         if (!isIgnored(t)) {
             int metric = getMetric(t);
-            if (metric >= getProperty(reportLevel)) {
-                asCtx(data).addViolation(node, getViolationParameters(t, metric));
+            int limit = getProperty(reportLevel);
+            if (metric >= limit) {
+                asCtx(data).addViolation(node, getViolationParameters(t, metric, limit));
             }
         }
 
         return data;
     }
 
+    /**
+     * @deprecated Since 7.19.0.
+     */
+    @Deprecated
     abstract static class AbstractLineLengthCheckRule<T extends PLSQLNode> extends AbstractCounterCheckRule<T> {
 
         AbstractLineLengthCheckRule(Class<T> nodeType) {

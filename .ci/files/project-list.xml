@@ -21,14 +21,14 @@ fi
 
 set -e
 
-# Make sure to use java11. This is already installed by build.sh
+# Make sure to use java11. This is already installed by build.yml/publish-snapshot.yml/publish-release.yml
 export JAVA_HOME=${HOME}/openjdk11
 export PATH=$JAVA_HOME/bin:$PATH
 
 mvn test-compile -B
 mvn dependency:build-classpath -DincludeScope=test -Dmdep.outputFile=classpath.txt -B
 ]]></build-command>
-    <auxclasspath-command>echo -n "$(pwd)/target/classes:$(pwd)/target/test-classes:"; cat classpath.txt</auxclasspath-command>
+    <auxclasspath-command>echo -n "${HOME}/openjdk11/lib/jrt-fs.jar:$(pwd)/target/classes:$(pwd)/target/test-classes:"; cat classpath.txt</auxclasspath-command>
   </project>
 
   <project>
@@ -38,6 +38,7 @@ mvn dependency:build-classpath -DincludeScope=test -Dmdep.outputFile=classpath.t
     <tag>v5.3.13</tag>
 
     <exclude-pattern>.*/build/generated-sources/.*</exclude-pattern>
+    <exclude-pattern>.*/build/resources/.*</exclude-pattern>
 
     <build-command><![CDATA[#!/usr/bin/env bash
 ## Skip gradle execution
@@ -47,7 +48,7 @@ fi
 
 set -e
 
-# Make sure to use java11. This is already installed by build.sh
+# Make sure to use java11. This is already installed by build.yml/publish-snapshot.yml/publish-release.yml
 export JAVA_HOME=${HOME}/openjdk11
 export PATH=$JAVA_HOME/bin:$PATH
 
@@ -156,7 +157,7 @@ EOF
 ./gradlew --console=plain --build-cache --no-daemon --max-workers=4 build testClasses -x test -x javadoc -x api -x asciidoctor -x asciidoctorPdf
 ./gradlew --console=plain --build-cache --no-daemon --max-workers=4 createSquishClasspath -q > classpath.txt
 ]]></build-command>
-    <auxclasspath-command>cat classpath.txt</auxclasspath-command>
+    <auxclasspath-command>echo -n "${HOME}/openjdk11/lib/jrt-fs.jar:"; cat classpath.txt</auxclasspath-command>
   </project>
 
   <project>
@@ -165,6 +166,7 @@ EOF
     <connection>https://github.com/openjdk/jdk</connection>
     <tag>jdk-11+28</tag>
     <src-subpath>src/java.base</src-subpath>
+    <auxclasspath-command>echo -n "${HOME}/openjdk11/lib/jrt-fs.jar"</auxclasspath-command>
   </project>
 
   <project>
@@ -195,5 +197,12 @@ EOF
     <connection>https://github.com/pmd/java-regression-tests</connection>
     <tag>main</tag>
     <auxclasspath-command>realpath java-regression-tests-*.jar</auxclasspath-command>
+  </project>
+
+  <project>
+    <name>OracleDBUtils</name>
+    <type>git</type>
+    <connection>https://github.com/Qualtagh/OracleDBUtils</connection>
+    <tag>0513fe6b053b31e6c09ac6f86eb2064733ecf32d</tag>
   </project>
 </projectlist>

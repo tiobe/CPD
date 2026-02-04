@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -12,6 +12,6 @@ class SelectHierarchicalTest extends AbstractPLSQLParserTst {
 
     @Test
     void parseSelectHierarchicalQueries() {
-        plsql.parseResource("SelectHierarchical.pls");
+        doTest("SelectHierarchical");
     }
 }

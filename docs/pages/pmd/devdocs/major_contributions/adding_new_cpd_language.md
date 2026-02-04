@@ -3,7 +3,7 @@ title: How to add a new CPD language
 short_title: Adding a new CPD language
 tags: [devdocs, extending]
 summary: How to add a new language module with CPD support.
-last_updated: June 2024 (7.3.0)
+last_updated: May 2025 (7.16.0)
 permalink: pmd_devdocs_major_adding_new_cpd_language.html
 author: Matías Fraga, Clément Fournier
 ---
@@ -27,11 +27,12 @@ Use the following guide to set up a new language module that supports CPD.
      is automatically available in the binary distribution (pmd-dist).
 
 2. Implement a {% jdoc core::cpd.CpdLexer %}.
-    - For Antlr grammars you can take the grammar from [antlr/grammars-v4](https://github.com/antlr/grammars-v4) and place it in `src/main/antlr4` followed by the package name of the language. You then need to call the appropriate ant wrapper to generate
+    - For Antlr grammars you can take the grammar from [antlr/grammars-v4](https://github.com/antlr/grammars-v4) and place it in `src/main/antlr4` followed by the package name of the language. You then need to call the antlr4 plugin and the appropriate ant wrapper with target `cpd-language` to generate
     the lexer from the grammar. To do so, edit `pom.xml` (eg like [the Golang module](https://github.com/pmd/pmd/tree/main/pmd-go/pom.xml)).
       Once that is done, `mvn generate-sources` should generate the lexer sources for you.
 
       You can now implement a CpdLexer, for instance by extending {% jdoc core::cpd.impl.AntlrCpdLexer %}. The following reproduces the Go implementation:
+
     ```java
     // mind the package convention if you are going to make a PR
     package net.sourceforge.pmd.lang.go.cpd;
@@ -44,7 +45,7 @@ Use the following guide to set up a new language module that supports CPD.
         }
     }
     ```
-    
+
     - If your language is case-insensitive, then you might want to overwrite `getImage(AntlrToken)`. There you can
       change each token e.g. into uppercase, so that CPD sees the same strings and can find duplicates even when
       the casing differs. See {% jdoc tsql::lang.tsql.cpd.TSqlCpdLexer %} for an example. You will also need a
@@ -58,13 +59,13 @@ Use the following guide to set up a new language module that supports CPD.
 
 3. Create a {% jdoc core::lang.Language %} implementation, and make it implement {% jdoc core::cpd.CpdCapableLanguage %}.
 If your language only supports CPD, then you can subclass {% jdoc core::lang.impl.CpdOnlyLanguageModuleBase %} to get going:
-    
+
     ```java
     // mind the package convention if you are going to make a PR
     package net.sourceforge.pmd.lang.go;
 
     public class GoLanguageModule extends CpdOnlyLanguageModuleBase {
-        
+
         // A public noarg constructor is required.
         public GoLanguageModule() {
             super(LanguageMetadata.withId("go").name("Go").extensions("go"));
@@ -75,7 +76,7 @@ If your language only supports CPD, then you can subclass {% jdoc core::lang.imp
             // This method should return an instance of the CpdLexer you created.
             return new GoCpdLexer();
         }
-    } 
+    }
     ```
 
    To make PMD find the language module at runtime, write the fully-qualified name of your language class into the file `src/main/resources/META-INF/services/net.sourceforge.pmd.lang.Language`.
@@ -86,7 +87,7 @@ If your language only supports CPD, then you can subclass {% jdoc core::lang.imp
 
 5. Add some tests for your CpdLexer by following the [section below](#testing-your-implementation).
 
-6. Finishing up your new language module by adding a page in the documentation. Create a new markdown file
+6. Add a page in the documentation. Create a new markdown file
    `<langId>.md` in `docs/pages/pmd/languages/`. This file should have the following frontmatter:
 
    ```
@@ -105,6 +106,13 @@ If your language only supports CPD, then you can subclass {% jdoc core::lang.imp
    {% raw %}
    {% include language_info.html name='<Language Name>' id='<langId>' implementation='<langId>::lang.<langId>.<langId>LanguageModule' supports_cpd=true %}
    {% endraw %}
+   ```
+
+7. Finishing up your new language module by adding a menu entry in [PMD Sidebar](https://github.com/pmd/pmd/blob/main/docs/_data/sidebars/pmd_sidebar.yml).
+   ```
+    - title: <Language Name>
+      url: /pmd_languages_<langId>.html
+      output: web, pdf
    ```
 
 ### Declaring CpdLexer options

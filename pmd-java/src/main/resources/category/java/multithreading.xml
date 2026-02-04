@@ -69,10 +69,10 @@ public class Foo {
         // code, that doesn't need synchronization
         // ...
         try {
-            CLS_LOCK.lock();
+            CLASS_LOCK.lock();
             // code, that requires synchronization
         } finally {
-            CLS_LOCK.unlock();
+            CLASS_LOCK.unlock();
         }
         // more code, that doesn't need synchronization
         // ...
@@ -180,7 +180,7 @@ the volatile keyword should not be used for maintenance purpose and portability.
         </properties>
         <example>
 <![CDATA[
-public class ThrDeux {
+public class Data {
   private volatile String var1; // not suggested
   private          String var2; // preferred
 }
@@ -337,7 +337,7 @@ Other possible fixes are to synchronize the entire method or to use an
 [initialize-on-demand holder class](https://en.wikipedia.org/wiki/Initialization-on-demand_holder_idiom).
 
 Refrain from using the double-checked locking pattern. The Java Memory Model doesn't
-guarantee it to work unless the variable is declared as `volatile`, adding an uneeded
+guarantee it to work unless the variable is declared as `volatile`, adding an unneeded
 performance penalty. [Reference](http://www.cs.umd.edu/~pugh/java/memoryModel/DoubleCheckedLocking.html)
 
 See Effective Java, item 48.
@@ -432,7 +432,7 @@ public class ConcurrentApp {
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_multithreading.html#usenotifyallinsteadofnotify">
         <description>
 Thread.notify() awakens a thread monitoring the object. If more than one thread is monitoring, then only
-one is chosen.  The thread chosen is arbitrary; thus its usually safer to call notifyAll() instead.
+one is chosen.  The thread chosen is arbitrary; thus it's usually safer to call notifyAll() instead.
         </description>
         <priority>3</priority>
         <properties>

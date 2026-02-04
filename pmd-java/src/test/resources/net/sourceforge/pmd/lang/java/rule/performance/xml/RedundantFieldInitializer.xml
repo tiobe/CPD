@@ -41,7 +41,7 @@ public class Foo {
 
     String str0;
     String str = null; // Bad
-    static String ststr = null; // Bad
+    static String stStr = null; // Bad
 
     private String sameLine = null, sameLine1 = null; // 2 Bad
     private String sameLine2, sameLine3 = null; // Bad
@@ -1492,5 +1492,27 @@ public class Test {
     String bar = null;   // false positive warning
 }
         ]]></code>
+    </test-code>
+    
+    <test-code>
+        <description>[java] RedundantFieldInitializer FN with constant expressions #3684</description>
+        <expected-problems>2</expected-problems>
+        <expected-linenumbers>2,3</expected-linenumbers>
+        <code><![CDATA[
+class Impl {
+    int a = 1 + 0 - 1; // should report a warning
+    int b = 0 + 1 - 1; // can be detected
+}
+]]></code>
+    </test-code>
+
+    <test-code>
+        <description>[java] RedundantFieldInitializer FP with expressions that start with zero #3743</description>
+        <expected-problems>0</expected-problems>
+        <code><![CDATA[
+class Impl {
+    int b = 0 + 1; // FP
+}
+]]></code>
     </test-code>
 </test-data>

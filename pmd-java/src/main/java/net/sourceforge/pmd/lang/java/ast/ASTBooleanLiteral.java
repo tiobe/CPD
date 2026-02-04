@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -31,7 +31,7 @@ public final class ASTBooleanLiteral extends AbstractLiteral implements ASTLiter
 
     @Override
     public @NonNull Boolean getConstValue() {
-        return isTrue;
+        return (Boolean) super.getConstValue();
     }
 
     @Override

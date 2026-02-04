@@ -74,8 +74,7 @@ public final class JavaResolvers {
         return isAccessibleIn(null, thisPackage, member, false);
     }
 
-    @NonNull
-    static NameResolver<JTypeMirror> moduleImport(Set<String> moduleNames,
+    static @NonNull NameResolver<JTypeMirror> moduleImport(Set<String> moduleNames,
                                                   final SymbolResolver symbolResolver,
                                                   final String thisPackage) {
         return new SingleNameResolver<JTypeMirror>() {
@@ -107,8 +106,7 @@ public final class JavaResolvers {
         };
     }
 
-    @NonNull
-    static NameResolver<JTypeMirror> importedOnDemand(Set<String> lazyImportedPackagesAndTypes,
+    static @NonNull NameResolver<JTypeMirror> importedOnDemand(Set<String> lazyImportedPackagesAndTypes,
                                                       final SymbolResolver symResolver,
                                                       final String thisPackage) {
         return new SingleNameResolver<JTypeMirror>() {
@@ -133,8 +131,7 @@ public final class JavaResolvers {
         };
     }
 
-    @NonNull
-    static NameResolver<JTypeMirror> packageResolver(SymbolResolver symResolver, String packageName) {
+    static @NonNull NameResolver<JTypeMirror> packageResolver(SymbolResolver symResolver, String packageName) {
         return new SingleNameResolver<JTypeMirror>() {
             @Nullable
             @Override
@@ -298,7 +295,7 @@ public final class JavaResolvers {
     private static List<JMethodSig> methodMerger(boolean inStaticType, List<JMethodSig> myResult, List<JMethodSig> otherResult) {
         if (otherResult.isEmpty()) {
             return myResult;
-        } // don't check myResult for emptyness, we might need to remove static methods
+        } // don't check myResult for emptiness, we might need to remove static methods
 
         // For both the input lists, their elements are pairwise non-equivalent.
         // If any element of myResult is override-equivalent to

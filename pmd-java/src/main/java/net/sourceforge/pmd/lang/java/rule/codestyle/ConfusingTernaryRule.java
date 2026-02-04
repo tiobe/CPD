@@ -1,10 +1,13 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
 package net.sourceforge.pmd.lang.java.rule.codestyle;
 
 import static net.sourceforge.pmd.properties.PropertyFactory.booleanProperty;
+import static net.sourceforge.pmd.properties.PropertyFactory.enumPropertyTransitional;
+
+import java.util.Map;
 
 import net.sourceforge.pmd.lang.java.ast.ASTConditionalExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTExpression;
@@ -16,6 +19,7 @@ import net.sourceforge.pmd.lang.java.ast.BinaryOp;
 import net.sourceforge.pmd.lang.java.ast.UnaryOp;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRulechainRule;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
+import net.sourceforge.pmd.util.CollectionUtil;
 
 
 /**
@@ -56,15 +60,28 @@ public class ConfusingTernaryRule extends AbstractJavaRulechainRule {
     private static final PropertyDescriptor<Boolean> IGNORE_ELSE_IF = booleanProperty("ignoreElseIf")
             .desc("Ignore conditions with an else-if case").defaultValue(false).build();
 
+    private static final Map<String, NullCheckBranch> DEPRECATED_MAPPING =
+            CollectionUtil.mapOf("Any", NullCheckBranch.ANY, "Then", NullCheckBranch.THEN, "Else", NullCheckBranch.ELSE);
+
+    private static final PropertyDescriptor<NullCheckBranch> NULL_CHECK_BRANCH = enumPropertyTransitional("nullCheckBranch", NullCheckBranch.class, DEPRECATED_MAPPING)
+        .desc("For `any` null checks may have any form,"
+            + " for `then` only `foo == null` is allowed, for `else` only `foo != null` is allowed")
+        .defaultValue(NullCheckBranch.ANY).build();
+
+    private enum NullCheckBranch {
+        ANY, THEN, ELSE
+    }
+
     public ConfusingTernaryRule() {
         super(ASTIfStatement.class, ASTConditionalExpression.class);
         definePropertyDescriptor(IGNORE_ELSE_IF);
+        definePropertyDescriptor(NULL_CHECK_BRANCH);
     }
 
     @Override
     public Object visit(ASTIfStatement node, Object data) {
         // look for "if (match) ..; else .."
-        if (node.getNumChildren() == 3
+        if (node.hasElse()
             && isMatch(node.getCondition())) {
             if (!getProperty(IGNORE_ELSE_IF)
                 || !(node.getElseBranch() instanceof ASTIfStatement)
@@ -85,28 +102,38 @@ public class ConfusingTernaryRule extends AbstractJavaRulechainRule {
     }
 
     // recursive!
-    private static boolean isMatch(ASTExpression node) {
+    private boolean isMatch(ASTExpression node) {
         return isUnaryNot(node) || isNotEquals(node) || isConditionalWithAllMatches(node);
     }
 
     private static boolean isUnaryNot(ASTExpression node) {
         // look for "!x"
         return node instanceof ASTUnaryExpression
-            && ((ASTUnaryExpression) node).getOperator().equals(UnaryOp.NEGATION);
+            && ((ASTUnaryExpression) node).getOperator() == UnaryOp.NEGATION;
     }
 
-    private static boolean isNotEquals(ASTExpression node) {
+    private boolean isNotEquals(ASTExpression node) {
         if (!(node instanceof ASTInfixExpression)) {
             return false;
         }
         ASTInfixExpression infix = (ASTInfixExpression) node;
         // look for "x != y"
-        return infix.getOperator().equals(BinaryOp.NE)
-            && !(infix.getLeftOperand() instanceof ASTNullLiteral)
-            && !(infix.getRightOperand() instanceof ASTNullLiteral);
+        if (infix.getOperator() == BinaryOp.NE) {
+            return !isNullComparison(infix)
+                || getProperty(NULL_CHECK_BRANCH) == NullCheckBranch.THEN;
+
+        }
+        return infix.getOperator() == BinaryOp.EQ
+            && isNullComparison(infix)
+            && getProperty(NULL_CHECK_BRANCH) == NullCheckBranch.ELSE;
     }
 
-    private static boolean isConditionalWithAllMatches(ASTExpression node) {
+    private boolean isNullComparison(ASTInfixExpression infix) {
+        return infix.getLeftOperand() instanceof ASTNullLiteral
+            || infix.getRightOperand() instanceof ASTNullLiteral;
+    }
+
+    private boolean isConditionalWithAllMatches(ASTExpression node) {
         // look for "match && match" or "match || match"
         if (node instanceof ASTInfixExpression) {
             ASTInfixExpression infix = (ASTInfixExpression) node;

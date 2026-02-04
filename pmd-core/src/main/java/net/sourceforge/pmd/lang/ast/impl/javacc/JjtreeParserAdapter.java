@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -34,8 +34,8 @@ public abstract class JjtreeParserAdapter<R extends RootNode> implements Parser 
             task = task.withTextDocument(charStream.getTokenDocument().getTextDocument());
             // Finally, do the parsing
             return parseImpl(charStream, task);
-        } catch (FileAnalysisException tme) {
-            throw tme.setFileId(task.getTextDocument().getFileId());
+        } catch (FileAnalysisException analysisException) {
+            throw analysisException.setFileId(task.getTextDocument().getFileId());
         }
     }
 

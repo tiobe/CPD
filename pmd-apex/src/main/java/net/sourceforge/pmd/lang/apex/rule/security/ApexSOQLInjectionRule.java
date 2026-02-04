@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -78,13 +78,13 @@ public class ApexSOQLInjectionRule extends AbstractApexRule {
             findSelectContainingVariables(a);
         }
 
-        // String foo = String.escapeSignleQuotes(...);
+        // String foo = String.escapeSingleQuotes(...);
         for (ASTVariableDeclaration a : node.descendants(ASTVariableDeclaration.class)) {
             findSanitizedVariables(a);
             findSelectContainingVariables(a);
         }
 
-        // baz = String.escapeSignleQuotes(...);
+        // baz = String.escapeSingleQuotes(...);
         for (ASTAssignmentExpression a : node.descendants(ASTAssignmentExpression.class)) {
             findSanitizedVariables(a);
             findSelectContainingVariables(a);

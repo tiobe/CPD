@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -18,9 +18,12 @@ import org.junit.platform.suite.api.Suite;
     Java17TreeDumpTest.class,
     Java21TreeDumpTest.class,
     Java22TreeDumpTest.class,
-    Java22PreviewTreeDumpTest.class,
     Java23TreeDumpTest.class,
-    Java23PreviewTreeDumpTest.class
+    Java24TreeDumpTest.class,
+    Java25TreeDumpTest.class,
+    Java25PreviewTreeDumpTest.class,
+    Java26TreeDumpTest.class,
+    Java26PreviewTreeDumpTest.class
 })
 class AllJavaAstTreeDumpTest {
 

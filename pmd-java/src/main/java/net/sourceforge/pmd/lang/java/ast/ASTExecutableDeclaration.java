@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -31,7 +31,8 @@ public interface ASTExecutableDeclaration
     extends ModifierOwner,
             ASTBodyDeclaration,
             TypeParamOwnerNode,
-            JavadocCommentOwner {
+            JavadocCommentOwner,
+            ReturnScopeNode {
 
 
     @Override
@@ -70,8 +71,7 @@ public interface ASTExecutableDeclaration
     /**
      * Returns the formal parameters node of this method or constructor.
      */
-    @NonNull
-    default ASTFormalParameters getFormalParameters() {
+    default @NonNull ASTFormalParameters getFormalParameters() {
         return firstChild(ASTFormalParameters.class);
     }
 
@@ -88,8 +88,8 @@ public interface ASTExecutableDeclaration
      * Returns the body of this method or constructor. Returns null if
      * this is the declaration of an abstract method.
      */
-    @Nullable
-    default ASTBlock getBody() {
+    @Override
+    default @Nullable ASTBlock getBody() {
         JavaNode last = getLastChild();
         return last instanceof ASTBlock ? (ASTBlock) last : null;
     }
@@ -98,8 +98,7 @@ public interface ASTExecutableDeclaration
      * Returns the {@code throws} clause of this declaration, or null
      * if there is none.
      */
-    @Nullable
-    default ASTThrowsList getThrowsList() {
+    default @Nullable ASTThrowsList getThrowsList() {
         return firstChild(ASTThrowsList.class);
     }
 

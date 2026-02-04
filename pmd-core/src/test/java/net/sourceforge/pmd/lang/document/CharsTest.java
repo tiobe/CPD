@@ -114,6 +114,49 @@ class CharsTest {
         assertEquals(-1, bc.indexOf('a', -1));
     }
 
+
+    @Test
+    void indexOfWithEndOffset() {
+        Chars bc = Chars.wrap("aaaaabcdb").slice(5, 2);
+        //                          --
+        assertEquals(-1, bc.indexOf('b', 0, 0));
+        assertEquals(0, bc.indexOf('b', 0, 1));
+        assertEquals(0, bc.indexOf('b', 0, 15));
+        assertEquals(0, bc.indexOf('b', -1, 15));
+        assertEquals(-1, bc.indexOf('b', 1, 15));
+
+        assertEquals(-1, bc.indexOf('c', 0, 0));
+        assertEquals(-1, bc.indexOf('c', 0, 1));
+        assertEquals(1, bc.indexOf('c', 0, 2));
+        assertEquals(1, bc.indexOf('c', 0, 15));
+        assertEquals(1, bc.indexOf('c', 1, 15));
+
+        assertEquals(-1, bc.indexOf('d', 0, 60));
+
+    }
+
+    @Test
+    void indexOfWithEndOffsetFullStr() {
+        Chars bc = Chars.wrap("aaaaabc").slice(5, 2);
+        //                          --
+        assertEquals(-1, bc.indexOf('b', 0, 0));
+        assertEquals(0, bc.indexOf('b', 0, 1));
+        assertEquals(0, bc.indexOf('b', 0, 15));
+        assertEquals(0, bc.indexOf('b', -1, 15));
+        assertEquals(-1, bc.indexOf('b', 1, 15));
+
+        assertEquals(-1, bc.indexOf('c', 0, 0));
+        assertEquals(-1, bc.indexOf('c', 0, 1));
+        assertEquals(1, bc.indexOf('c', 0, 2));
+        assertEquals(1, bc.indexOf('c', 0, 15));
+        assertEquals(1, bc.indexOf('c', 1, 15));
+
+        assertEquals(-1, bc.indexOf('d', 0, 60));
+
+        assertEquals(-1, bc.indexOf('d', 60, 65));
+
+    }
+
     @Test
     void indexOfString() {
         Chars bc = Chars.wrap("aaaaabcdb").slice(5, 2);
@@ -266,9 +309,9 @@ class CharsTest {
 
     @Test
     void linesStreamTest() {
-        Chars bc = Chars.wrap("aa\nb\rded\r\nlff");
+        Chars bc = Chars.wrap("aa\nb\rdid\r\nlff");
         List<String> lines = bc.lineStream().map(Chars::toString).collect(Collectors.toList());
-        assertEquals(listOf("aa", "b", "ded", "lff"), lines);
+        assertEquals(listOf("aa", "b", "did", "lff"), lines);
     }
 
     @Test

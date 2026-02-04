@@ -5,7 +5,6 @@
 package net.sourceforge.pmd.lang.java.symbols.internal.asm;
 
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -18,22 +17,27 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.TypePath;
 import org.objectweb.asm.TypeReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import net.sourceforge.pmd.lang.java.symbols.JClassSymbol;
 import net.sourceforge.pmd.lang.java.symbols.JTypeParameterOwnerSymbol;
 import net.sourceforge.pmd.lang.java.symbols.SymbolicValue.SymAnnot;
+import net.sourceforge.pmd.lang.java.symbols.internal.asm.ExecutableStub.CtorStub;
 import net.sourceforge.pmd.lang.java.symbols.internal.asm.TypeAnnotationHelper.TypeAnnotationSet;
 import net.sourceforge.pmd.lang.java.symbols.internal.asm.TypeAnnotationHelper.TypeAnnotationSetWithReferences;
 import net.sourceforge.pmd.lang.java.types.JClassType;
-import net.sourceforge.pmd.lang.java.types.JIntersectionType;
 import net.sourceforge.pmd.lang.java.types.JTypeMirror;
 import net.sourceforge.pmd.lang.java.types.JTypeVar;
 import net.sourceforge.pmd.lang.java.types.LexicalScope;
 import net.sourceforge.pmd.lang.java.types.Substitution;
 import net.sourceforge.pmd.lang.java.types.TypeOps;
+import net.sourceforge.pmd.util.AssertionUtil;
 import net.sourceforge.pmd.util.CollectionUtil;
 
 abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GenericSigBase.class);
+
     /*
        Signatures must be parsed lazily, because at the point we see them
        in the file, the enclosing class might not yet have been encountered
@@ -46,14 +50,25 @@ abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
     protected List<JTypeVar> typeParameters;
     private final ParseLock lock;
 
-    protected GenericSigBase(T ctx) {
+    protected GenericSigBase(T ctx, String parseLockName) {
         this.ctx = ctx;
-        this.lock = new ParseLock() {
+        this.lock = new ParseLock(parseLockName) {
             @Override
             protected boolean doParse() {
-                GenericSigBase.this.doParse();
-                return true;
+                try {
+                    GenericSigBase.this.doParse();
+                    return true;
+                } catch (RuntimeException e) {
+                    throw AssertionUtil.contexted(e)
+                                       .addContextValue("signature", GenericSigBase.this)
+                                       // Here we don't use the toString of the ctx directly because
+                                       // it could be using the signature indirectly, which would fail
+                                       .addContextValue("owner class", ctx.getEnclosingClass())
+                                       .addContextValue("owner name", ctx.getSimpleName())
+                                       .addContextValue("owner package", ctx.getPackageName());
+                }
             }
+
 
             @Override
             protected boolean postCondition() {
@@ -61,8 +76,9 @@ abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
             }
 
             @Override
-            protected boolean canReenter() {
-                return typeParameters != null;
+            protected void finishParse(boolean failed) {
+                // Mark the bound as ready to parse, after any type annotations have been collected
+                typeParameters.forEach(tp -> ((TParamStub) tp.getSymbol()).setCanComputeBound());
             }
         };
     }
@@ -81,7 +97,11 @@ abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
 
     protected abstract boolean postCondition();
 
-    protected abstract boolean isGeneric();
+    protected abstract int getTypeParameterCount();
+
+    protected boolean isGeneric() {
+        return getTypeParameterCount() > 0;
+    }
 
     public void setTypeParams(List<JTypeVar> tvars) {
         assert this.typeParameters == null : "Type params were already parsed for " + this;
@@ -105,6 +125,7 @@ abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
         private static final String OBJECT_BOUND = ":" + OBJECT_SIG;
 
         private final @Nullable String signature;
+        private final int typeParameterCount;
 
         private @Nullable JClassType superType;
         private List<JClassType> superItfs;
@@ -116,8 +137,9 @@ abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
                            @Nullable String signature, // null if doesn't use generics in header
                            @Nullable String superInternalName, // null if this is the Object class
                            String[] interfaces) {
-            super(ctx);
+            super(ctx, "LazyClassSignature:" + ctx.getInternalName() + "[" + signature + "]");
             this.signature = signature;
+            this.typeParameterCount = GenericTypeParameterCounter.determineTypeParameterCount(this.signature);
 
             this.rawItfs = CollectionUtil.map(interfaces, ctx.getResolver()::resolveFromInternalNameCannotFail);
             this.rawSuper = ctx.getResolver().resolveFromInternalNameCannotFail(superInternalName);
@@ -157,8 +179,9 @@ abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
         }
 
         @Override
-        protected boolean isGeneric() {
-            return signature != null && TypeParamsParser.hasTypeParams(signature);
+        protected int getTypeParameterCount() {
+            // note: no ensureParsed() needed, the type parameters are counted eagerly
+            return typeParameterCount;
         }
 
         @Override
@@ -206,6 +229,7 @@ abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
     static class LazyMethodType extends GenericSigBase<ExecutableStub> implements TypeAnnotationReceiver {
 
         private final @NonNull String signature;
+        private final int typeParameterCount;
 
         private @Nullable TypeAnnotationSet receiverAnnotations;
         private List<JTypeMirror> parameterTypes;
@@ -233,8 +257,9 @@ abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
                        @Nullable String genericSig,
                        @Nullable String[] exceptions,
                        boolean skipFirstParam) {
-            super(ctx);
+            super(ctx, "LazyMethodType:" + (genericSig != null ? genericSig : descriptor));
             this.signature = genericSig != null ? genericSig : descriptor;
+            this.typeParameterCount = GenericTypeParameterCounter.determineTypeParameterCount(genericSig);
             // generic signatures already omit the synthetic param
             this.skipFirstParam = skipFirstParam && genericSig == null;
             this.rawExceptions = exceptions;
@@ -250,28 +275,22 @@ abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
                                             .map(ctx.getTypeSystem()::rawType)
                                             .collect(CollectionUtil.toUnmodifiableList());
             }
+            if (ctx instanceof CtorStub) {
+                // Is a constructor, return type of the descriptor is void.
+                // We replace the return type with the owner type. This must
+                // be done before type annotations are applied.
+                assert this.returnType.isVoid();
+                this.returnType = ctx.getTypeSystem().declaration(ctx.getEnclosingClass());
+            }
             if (typeAnnots != null) {
                 // apply type annotations here
                 // this may change type parameters
-                boolean typeParamsWereMutated = typeAnnots.forEach(this::acceptAnnotationAfterParse);
-                if (typeParamsWereMutated) {
-                    // Some type parameters were mutated. We need to replace
-                    // the old tparams with the annotated ones in all other
-                    // types of this signature.
-
-                    // This substitution looks like the identity mapping.
-                    // It actually does work, because JTypeVar#equals considers only the symbol
-                    // and not the type annotations. So unannotated tvars in the type will be
-                    // matched with the annotated tvar that has the same symbol.
-                    Substitution subst = Substitution.mapping(typeParameters, typeParameters);
-                    this.returnType = this.returnType.subst(subst);
-                    this.parameterTypes = TypeOps.subst(parameterTypes, subst);
-                    this.exceptionTypes = TypeOps.subst(exceptionTypes, subst);
-                }
+                typeAnnots.forEach(this::acceptAnnotationAfterParse);
             }
             // null this transient data out
             this.rawExceptions = null;
             this.typeAnnots = null;
+
         }
 
         public JTypeMirror applyReceiverAnnotations(JTypeMirror typeMirror) {
@@ -288,8 +307,9 @@ abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
 
 
         @Override
-        protected boolean isGeneric() {
-            return TypeParamsParser.hasTypeParams(signature);
+        protected int getTypeParameterCount() {
+            // note: no ensureParsed() needed, the type parameters are counted eagerly
+            return typeParameterCount;
         }
 
         void setParameterTypes(List<JTypeMirror> params) {
@@ -378,12 +398,12 @@ abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
             case TypeReference.METHOD_TYPE_PARAMETER_BOUND: {
                 assert typeParameters != null;
                 int tparamIdx = tyRef.getTypeParameterIndex();
-                int boundIdx = tyRef.getTypeParameterBoundIndex();
 
                 JTypeVar tparam = typeParameters.get(tparamIdx);
-                final JTypeMirror newUb = computeNewUpperBound(path, annot, boundIdx, tparam.getUpperBound());
-                typeParameters.set(tparamIdx, tparam.withUpperBound(newUb));
-                return true;
+                TParamStub sym = (TParamStub) tparam.getSymbol();
+                assert sym != null;
+                sym.addAnnotationOnBound(tyRef, path, annot);
+                return false;
             }
             case TypeReference.METHOD_RECEIVER: {
                 if (receiverAnnotations == null) {
@@ -392,30 +412,28 @@ abstract class GenericSigBase<T extends JTypeParameterOwnerSymbol & AsmStub> {
                 receiverAnnotations.add(path, annot);
                 return false;
             }
+            case TypeReference.CLASS_EXTENDS: {
+                // avoid exception for Java 11 bug
+                // see https://github.com/pmd/pmd/issues/5344 and https://bugs.openjdk.org/browse/JDK-8198945
+                LOGGER.debug("Invalid target type CLASS_EXTENDS of type annotation {} for method or ctor detected. "
+                        + "The annotation is ignored. Method: {}#{}. See https://github.com/pmd/pmd/issues/5344.",
+                        annot, ctx.getEnclosingClass().getCanonicalName(), ctx.getSimpleName());
+                return false;
+            }
+            case TypeReference.FIELD: {
+                // avoid exception for Java 16+ bug
+                // see https://github.com/pmd/pmd/issues/6256 and https://bugs.openjdk.org/browse/JDK-8372382
+                LOGGER.debug("Invalid target type FIELD of type annotation {} for method or ctor detected. "
+                        + "The annotation is ignored. Method: {}#{}. See https://github.com/pmd/pmd/issues/6256.",
+                        annot, ctx.getEnclosingClass().getCanonicalName(), ctx.getSimpleName());
+                return false;
+            }
             default:
                 throw new IllegalArgumentException(
-                    "Invalid type reference for method or ctor type annotation: " + tyRef.getSort());
+                    "Invalid target type of type annotation " + annot + " for method or ctor type annotation: "
+                            + tyRef.getSort());
             }
         }
 
-        private static JTypeMirror computeNewUpperBound(@Nullable TypePath path, SymAnnot annot, int boundIdx, JTypeMirror ub) {
-            final JTypeMirror newUb;
-            if (ub instanceof JIntersectionType) {
-                JIntersectionType intersection = (JIntersectionType) ub;
-
-                // Object is pruned from the component list
-                boundIdx = intersection.getPrimaryBound().isTop() ? boundIdx - 1 : boundIdx;
-
-                List<JTypeMirror> components = new ArrayList<>(intersection.getComponents());
-                JTypeMirror bound = components.get(boundIdx);
-                JTypeMirror newBound = TypeAnnotationHelper.applySinglePath(bound, path, annot);
-                components.set(boundIdx, newBound);
-                JTypeMirror newIntersection = intersection.getTypeSystem().glb(components);
-                newUb = newIntersection;
-            } else {
-                newUb = TypeAnnotationHelper.applySinglePath(ub, path, annot);
-            }
-            return newUb;
-        }
     }
 }

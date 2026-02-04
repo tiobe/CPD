@@ -9,8 +9,9 @@ import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
 
 import net.sourceforge.pmd.cpd.CpdLanguageProperties;
-import net.sourceforge.pmd.cpd.impl.CpdLexerBase;
+import net.sourceforge.pmd.cpd.TokenFactory;
 import net.sourceforge.pmd.cpd.impl.JavaCCTokenFilter;
+import net.sourceforge.pmd.cpd.impl.JavaccCpdLexer;
 import net.sourceforge.pmd.lang.LanguagePropertyBundle;
 import net.sourceforge.pmd.lang.TokenManager;
 import net.sourceforge.pmd.lang.ast.impl.javacc.CharStream;
@@ -26,7 +27,7 @@ import net.sourceforge.pmd.lang.document.TextDocument;
  *
  * <p>Note: This class has been called CPPTokenizer in PMD 6</p>.
  */
-public class CppCpdLexer extends CpdLexerBase<JavaccToken> {
+public class CppCpdLexer extends JavaccCpdLexer {
 
     private boolean skipBlocks;
     private Pattern skipBlocksStart;
@@ -34,11 +35,15 @@ public class CppCpdLexer extends CpdLexerBase<JavaccToken> {
     private final boolean ignoreIdentifierAndLiteralSequences;
     private final boolean ignoreLiteralSequences;
     private final boolean ignoreArrayInitializations;
+    private final boolean ignoreLiterals;
+    private final boolean ignoreIdentifiers;
 
     public CppCpdLexer(LanguagePropertyBundle cppProperties) {
         ignoreLiteralSequences = cppProperties.getProperty(CpdLanguageProperties.CPD_IGNORE_LITERAL_SEQUENCES);
         ignoreIdentifierAndLiteralSequences = cppProperties.getProperty(CpdLanguageProperties.CPD_IGNORE_LITERAL_AND_IDENTIFIER_SEQUENCES);
         ignoreArrayInitializations = cppProperties.getProperty(CpdLanguageProperties.CPD_IGNORE_SEQUENCE_INITIALIZATION);
+        ignoreLiterals = cppProperties.getProperty(CpdLanguageProperties.CPD_ANONYMIZE_LITERALS);
+        ignoreIdentifiers = cppProperties.getProperty(CpdLanguageProperties.CPD_ANONYMIZE_IDENTIFIERS);
         String skipBlocksPattern = cppProperties.getProperty(CppLanguageModule.CPD_SKIP_BLOCKS);
         if (StringUtils.isNotBlank(skipBlocksPattern)) {
             skipBlocks = true;
@@ -75,6 +80,23 @@ public class CppCpdLexer extends CpdLexerBase<JavaccToken> {
         return new CppTokenFilter(tokenManager, ignoreLiteralSequences, ignoreIdentifierAndLiteralSequences, ignoreArrayInitializations);
     }
 
+    @Override
+    protected void processToken(TokenFactory tokenEntries, JavaccToken currentToken) {
+        int kind = currentToken.getKind();
+        String image = currentToken.getImage();
+
+        boolean isLiteral = kind == CppTokenKinds.STRING || kind == CppTokenKinds.RSTRING || kind == CppTokenKinds.CHARACTER || kind == CppTokenKinds.DECIMAL_INT_LITERAL || kind == CppTokenKinds.HEXADECIMAL_INT_LITERAL || kind == CppTokenKinds.OCTAL_INT_LITERAL || kind == CppTokenKinds.FLOAT_LITERAL || kind == CppTokenKinds.BINARY_INT_LITERAL || kind == CppTokenKinds.ZERO;
+        if (ignoreLiterals && isLiteral) {
+            image = CppTokenKinds.describe(kind);
+        }
+
+        if (ignoreIdentifiers && (kind == CppTokenKinds.ID)) {
+            image = CppTokenKinds.describe(kind);
+        }
+
+        tokenEntries.recordToken(image, currentToken.getReportLocation());
+    }
+
     private static class CppTokenFilter extends JavaCCTokenFilter {
 
         private final boolean ignoreLiteralSequences;
@@ -100,7 +122,7 @@ public class CppCpdLexer extends CpdLexerBase<JavaccToken> {
             if (ignoreLiteralSequences || ignoreIdentifierAndLiteralSequences || ignoreArrayInitializations) {
                 final int kind = currentToken.getKind();
                 if (isDiscardingToken()) {
-                    if (currentToken == discardingTokensUntil) { // NOPMD - intentional check for reference equality
+                    if (currentToken == discardingTokensUntil) {
                         discardingTokensUntil = null;
                         discardCurrent = true;
                     }

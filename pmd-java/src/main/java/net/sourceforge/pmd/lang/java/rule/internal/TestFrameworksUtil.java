@@ -27,7 +27,7 @@ public final class TestFrameworksUtil {
     private static final String JUNIT3_CLASS_NAME = "junit.framework.TestCase";
     private static final String JUNIT4_TEST_ANNOT = "org.junit.Test";
 
-    private static final String TESTNG_TEST_ANNOT = "org.testng.annotations.Test";
+    private static final String TEST_NG_TEST_ANNOT = "org.testng.annotations.Test";
 
     private static final Set<String> JUNIT5_ALL_TEST_ANNOTS =
         setOf("org.junit.jupiter.api.Test",
@@ -99,7 +99,7 @@ public final class TestFrameworksUtil {
     }
 
     private static boolean isTestNgMethod(ASTMethodDeclaration method) {
-        return method.isAnnotationPresent(TESTNG_TEST_ANNOT);
+        return method.isAnnotationPresent(TEST_NG_TEST_ANNOT);
     }
 
     public static boolean isJUnit4Method(ASTMethodDeclaration method) {
@@ -172,7 +172,10 @@ public final class TestFrameworksUtil {
 
     public static boolean isProbableAssertCall(ASTMethodCall call) {
         String name = call.getMethodName();
-        return name.startsWith("assert") && !isSoftAssert(call)
+        boolean isSoftAssertType = isSoftAssert(call);
+        return name.startsWith("assert") && !isSoftAssertType
+            || "assertAll".equals(name) && isSoftAssertType
+            || "assertSoftly".equals(name) && isSoftAssertType
             || name.startsWith("check")
             || name.startsWith("verify")
             || "fail".equals(name)
@@ -180,12 +183,11 @@ public final class TestFrameworksUtil {
             || isExpectExceptionCall(call);
     }
 
-    private static boolean isSoftAssert(ASTMethodCall call) {
+    public static boolean isSoftAssert(ASTMethodCall call) {
         JTypeMirror declaringType = call.getMethodType().getDeclaringType();
-        return (TypeTestUtil.isA("org.assertj.core.api.StandardSoftAssertionsProvider", declaringType)
+        return TypeTestUtil.isA("org.assertj.core.api.StandardSoftAssertionsProvider", declaringType)
                 || TypeTestUtil.isA("org.assertj.core.api.Java6StandardSoftAssertionsProvider", declaringType)
-                || TypeTestUtil.isA("org.assertj.core.api.AbstractSoftAssertions", declaringType))
-            && !"assertAll".equals(call.getMethodName());
+                || TypeTestUtil.isA("org.assertj.core.api.AbstractSoftAssertions", declaringType);
     }
 
     /**
@@ -193,9 +195,9 @@ public final class TestFrameworksUtil {
      */
     public static boolean isExpectAnnotated(ASTMethodDeclaration method) {
         return method.getDeclaredAnnotations()
-                     .filter(TestFrameworksUtil::isJunit4TestAnnotation)
+                     .filter(annotation -> isJunit4TestAnnotation(annotation) || isTestNgMethod(method))
                      .flatMap(ASTAnnotation::getMembers)
-                     .any(it -> "expected".equals(it.getName()));
+                     .any(it -> "expected".equals(it.getName()) || "expectedExceptions".equals(it.getName()));
 
     }
 }

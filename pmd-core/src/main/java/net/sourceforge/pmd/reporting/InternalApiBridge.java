@@ -4,6 +4,7 @@
 
 package net.sourceforge.pmd.reporting;
 
+import java.util.List;
 import java.util.Map;
 
 import net.sourceforge.pmd.annotation.InternalApi;
@@ -19,7 +20,7 @@ import net.sourceforge.pmd.lang.rule.Rule;
  * <p><b>None of this is published API, and compatibility can be broken anytime!</b>
  * Use this only at your own risk.
  *
- * @apiNote Internal API
+ * @internalApi None of this is published API, and compatibility can be broken anytime! Use this only at your own risk.
  */
 @InternalApi
 public final class InternalApiBridge {
@@ -28,6 +29,8 @@ public final class InternalApiBridge {
     public static Rule getRule(RuleContext ruleContext) {
         return ruleContext.getRule();
     }
+
+    public static final List<ViolationSuppressor> DEFAULT_SUPPRESSORS = RuleContext.DEFAULT_SUPPRESSORS;
 
     /**
      * Create a new RuleContext.

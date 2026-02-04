@@ -1,10 +1,13 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
 package net.sourceforge.pmd.lang;
 
 import java.util.Objects;
+
+import org.apache.commons.lang3.StringUtils;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import net.sourceforge.pmd.cpd.AnyCpdLexer;
 import net.sourceforge.pmd.cpd.CpdCapableLanguage;
@@ -22,8 +25,13 @@ import net.sourceforge.pmd.lang.document.TextDocument;
 import net.sourceforge.pmd.lang.document.TextPos2d;
 import net.sourceforge.pmd.lang.document.TextRegion;
 import net.sourceforge.pmd.lang.impl.SimpleLanguageModuleBase;
+import net.sourceforge.pmd.lang.metrics.LanguageMetricsProvider;
+import net.sourceforge.pmd.lang.metrics.Metric;
+import net.sourceforge.pmd.lang.rule.xpath.impl.XPathFunctionDefinition;
+import net.sourceforge.pmd.lang.rule.xpath.impl.XPathHandler;
 import net.sourceforge.pmd.reporting.RuleViolation;
 import net.sourceforge.pmd.reporting.ViolationDecorator;
+import net.sourceforge.pmd.util.CollectionUtil;
 
 /**
  * Dummy language used for testing PMD.
@@ -96,7 +104,7 @@ public class DummyLanguageModule extends SimpleLanguageModuleBase implements Cpd
         @Override
         public Parser getParser() {
             return task -> {
-                if (task.getLanguageVersion().getVersion().equals(PARSER_THROWS)) {
+                if (PARSER_THROWS.equals(task.getLanguageVersion().getVersion())) {
                     throw new ParseException("ohio");
                 }
                 return readLispNode(task);
@@ -106,6 +114,18 @@ public class DummyLanguageModule extends SimpleLanguageModuleBase implements Cpd
         @Override
         public ViolationDecorator getViolationDecorator() {
             return (node, data) -> data.put(RuleViolation.PACKAGE_NAME, "foo");
+        }
+
+        @Override
+        public XPathHandler getXPathHandler() {
+            return XPathHandler.getHandlerForFunctionDefs(imageIsFunction());
+        }
+
+        @Override
+        public LanguageMetricsProvider getLanguageMetricsProvider() {
+            return () -> CollectionUtil.setOf(
+                    Metric.of((node, options) -> 1, (node) -> node,
+                    "Constant value metric", "const1"));
         }
     }
 
@@ -159,7 +179,7 @@ public class DummyLanguageModule extends SimpleLanguageModuleBase implements Cpd
                     throw new ParseException("Unbalanced parentheses: " + text);
                 }
 
-                top.setRegion(TextRegion.fromBothOffsets(top.getTextRegion().getStartOffset(), i));
+                top.setRegion(TextRegion.fromBothOffsets(top.getTextRegion().getStartOffset(), i + 1));
 
                 if (top.getImage() == null) {
                     // cut out image (if node doesn't have children it hasn't been populated yet)
@@ -176,4 +196,23 @@ public class DummyLanguageModule extends SimpleLanguageModuleBase implements Cpd
         return root;
     }
 
+    @NonNull
+    public static XPathFunctionDefinition imageIsFunction() {
+        return new XPathFunctionDefinition("imageIs", DummyLanguageModule.getInstance()) {
+            @Override
+            public Type[] getArgumentTypes() {
+                return new Type[] {Type.SINGLE_STRING};
+            }
+
+            @Override
+            public Type getResultType() {
+                return Type.SINGLE_BOOLEAN;
+            }
+
+            @Override
+            public FunctionCall makeCallExpression() {
+                return (contextNode, arguments) -> StringUtils.equals(arguments[0].toString(), contextNode.getImage());
+            }
+        };
+    }
 }

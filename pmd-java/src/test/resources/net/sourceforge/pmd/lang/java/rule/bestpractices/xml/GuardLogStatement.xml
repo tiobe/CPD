@@ -771,4 +771,66 @@ public class MyClass {
 }
         ]]></code>
     </test-code>
+
+    <test-code>
+        <description>#4703 [java] GuardLogStatement reports violation for Log4j parameterized logs</description>
+        <expected-problems>1</expected-problems>
+        <expected-linenumbers>8</expected-linenumbers>
+        <code><![CDATA[
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+class Test {
+    private static final Logger LOGGER = LogManager.getLogger(Test.class);
+
+    public static void main() {
+        LOGGER.info("Info : {} : Request received", LOGGER.getName()); // one violation here, because of LOGGER.getName() method call
+        String s = "Hello World";
+        LOGGER.debug("Logging string {}", s); // this is ok
+    }
+}
+]]></code>
+    </test-code>
+
+    <test-code>
+        <description>#5820 compile time constant only recognized in first position</description>
+        <expected-problems>0</expected-problems>
+        <code><![CDATA[
+import org.slf4j.*;
+
+public class MyLogger {
+    private static final Logger LOGGER = LoggerFactory.getLogger(MyLogger.class);
+
+    public static void main(String[] args) {
+        final Marker marker = MarkerFactory.getMarker("myMarker");
+        LOGGER.debug(marker, "Part3 " + "Part4"); // fixed false positive
+        LOGGER.debug(marker, "Message={}", "Part3 " + "Part4"); // fixed false positive
+    }
+}
+]]></code>
+    </test-code>
+
+    <test-code>
+        <description>#4282 GuardLogStatement only detects guard methods immediately around it</description>
+        <expected-problems>0</expected-problems>
+        <code><![CDATA[
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+public class Foo {
+    private static final Logger LOG = LogManager.getLogger(Foo.class);
+    public void test(String arg1) {
+        if (LOG.isWarnEnabled()) {
+            if (someCondition) {
+                String msg = "Message 1 with one argument: ";
+                LOG.warn(msg + arg1);
+            } else {
+                String msg = "Message 2 with two arguments: {}, {}.";
+                LOG.warn(msg + arg1);
+            }
+        }
+    }
+}
+    ]]></code>
+    </test-code>
 </test-data>

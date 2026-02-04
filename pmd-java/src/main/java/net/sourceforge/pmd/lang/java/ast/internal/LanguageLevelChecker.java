@@ -28,6 +28,7 @@ import net.sourceforge.pmd.lang.java.ast.ASTImportDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTInfixExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTIntersectionType;
 import net.sourceforge.pmd.lang.java.ast.ASTLambdaExpression;
+import net.sourceforge.pmd.lang.java.ast.ASTLambdaParameter;
 import net.sourceforge.pmd.lang.java.ast.ASTMethodDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTMethodReference;
 import net.sourceforge.pmd.lang.java.ast.ASTModuleDeclaration;
@@ -44,7 +45,6 @@ import net.sourceforge.pmd.lang.java.ast.ASTStringLiteral;
 import net.sourceforge.pmd.lang.java.ast.ASTSwitchArrowBranch;
 import net.sourceforge.pmd.lang.java.ast.ASTSwitchExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTSwitchLabel;
-import net.sourceforge.pmd.lang.java.ast.ASTTemplateExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTTryStatement;
 import net.sourceforge.pmd.lang.java.ast.ASTType;
 import net.sourceforge.pmd.lang.java.ast.ASTTypeArguments;
@@ -130,39 +130,13 @@ public class LanguageLevelChecker<T> {
      */
     private enum PreviewFeature implements LanguageFeature {
         /**
-         * String Templates. Only support with Java 22 Preview now.
-         * @see <a href="https://openjdk.org/jeps/430">JEP 430: String Templates (Preview)</a> (Java 21)
-         * @see <a href="https://openjdk.org/jeps/459">JEP 459: String Templates (Second Preview)</a> (Java 22)
-         * @see <a href="https://bugs.openjdk.org/browse/JDK-8329949">JDK-8329949 Remove the String Templates preview feature</a> (Java 23)
-         */
-        STRING_TEMPLATES(22, 22, false),
-
-        /**
-         * Unnamed Classes and Instance Main Methods
-         * @see <a href="https://openjdk.org/jeps/445">JEP 445: Unnamed Classes and Instance Main Methods (Preview)</a> (Java 21)
-         * @see <a href="https://openjdk.org/jeps/463">JEP 463: Implicitly Declared Classes and Instance Main Methods (Second Preview)</a> (Java 22)
-         * @see <a href="https://openjdk.org/jeps/477">JEP 477: Implicitly Declared Classes and Instance Main Methods (Third Preview)</a> (Java 23)
-         */
-        IMPLICITLY_DECLARED_CLASSES_AND_INSTANCE_MAIN_METHODS(22, 23, false),
-
-        /**
-         * Statements before super
-         * @see <a href="https://openjdk.org/jeps/447">JEP 447: Statements before super(...) (Preview)</a> (Java 22)
-         * @see <a href="https://openjdk.org/jeps/482">JEP 482: Flexible Constructor Bodies (Second Preview)</a> (Java 23)
-         */
-        FLEXIBLE_CONSTRUCTOR_BODIES(22, 23, false),
-
-        /**
-         * Module import declarations
-         * @see <a href="https://openjdk.org/jeps/476">JEP 476: Module Import Declarations (Preview)</a> (Java 23)
-         */
-        MODULE_IMPORT_DECLARATIONS(23, 23, false),
-
-        /**
          * Primitive types in patterns, instanceof, and switch
          * @see <a href="https://openjdk.org/jeps/455">JEP 455: Primitive Types in Patterns, instanceof, and switch (Preview)</a> (Java 23)
+         * @see <a href="https://openjdk.org/jeps/488">JEP 488: Primitive Types in Patterns, instanceof, and switch (Second Preview)</a> (Java 24)
+         * @see <a href="https://openjdk.org/jeps/507">JEP 507: Primitive Types in Patterns, instanceof, and switch (Third Preview)</a> (Java 25)
+         * @see <a href="https://openjdk.org/jeps/530">JEP 530: Primitive Types in Patterns, instanceof, and switch (Fourth Preview)</a> (Java 26)
          */
-        PRIMITIVE_TYPES_IN_PATTERNS_INSTANCEOF_AND_SWITCH(23, 23, false),
+        PRIMITIVE_TYPES_IN_PATTERNS_INSTANCEOF_AND_SWITCH(23, 26, false),
 
         ;  // SUPPRESS CHECKSTYLE enum trailing semi is awesome
 
@@ -298,6 +272,8 @@ public class LanguageLevelChecker<T> {
         PRIVATE_METHODS_IN_INTERFACES(9),
         CONCISE_RESOURCE_SYNTAX(9),
 
+        VAR_KEYWORD_IN_LAMBDA_PARAMETER(11),
+
         /**
          * @see <a href="https://openjdk.org/jeps/361">JEP 361: Switch Expressions</a>
          */
@@ -401,6 +377,33 @@ public class LanguageLevelChecker<T> {
          */
         UNNAMED_VARIABLES_AND_PATTERNS(22),
 
+        /**
+         * Compact Source Files and Instance Main Methods
+         * @see <a href="https://openjdk.org/jeps/445">JEP 445: Unnamed Classes and Instance Main Methods (Preview)</a> (Java 21)
+         * @see <a href="https://openjdk.org/jeps/463">JEP 463: Implicitly Declared Classes and Instance Main Methods (Second Preview)</a> (Java 22)
+         * @see <a href="https://openjdk.org/jeps/477">JEP 477: Implicitly Declared Classes and Instance Main Methods (Third Preview)</a> (Java 23)
+         * @see <a href="https://openjdk.org/jeps/495">JEP 495: Simple Source Files and Instance Main Methods (Fourth Preview)</a> (Java 24)
+         * @see <a href="https://openjdk.org/jeps/512">JEP 512: Compact Source Files and Instance Main Methods</a> (Java 25)
+         */
+        COMPACT_SOURCE_FILES_AND_INSTANCE_MAIN_METHODS(25),
+
+        /**
+         * Flexible Constructor Bodies
+         * @see <a href="https://openjdk.org/jeps/447">JEP 447: Statements before super(...) (Preview)</a> (Java 22)
+         * @see <a href="https://openjdk.org/jeps/482">JEP 482: Flexible Constructor Bodies (Second Preview)</a> (Java 23)
+         * @see <a href="https://openjdk.org/jeps/492">JEP 492: Flexible Constructor Bodies (Third Preview)</a> (Java 24)
+         * @see <a href="https://openjdk.org/jeps/513">JEP 513: Flexible Constructor Bodies</a> (Java 25)
+         */
+        FLEXIBLE_CONSTRUCTOR_BODIES(25),
+
+        /**
+         * Module import declarations
+         * @see <a href="https://openjdk.org/jeps/476">JEP 476: Module Import Declarations (Preview)</a> (Java 23)
+         * @see <a href="https://openjdk.org/jeps/494">JEP 494: Module Import Declarations (Second Preview)</a> (Java 24)
+         * @see <a href="https://openjdk.org/jeps/511">JEP 511: Module Import Declarations</a> (Java 25)
+         */
+        MODULE_IMPORT_DECLARATIONS(25),
+
         ;  // SUPPRESS CHECKSTYLE enum trailing semi is awesome
 
         private final int minJdkLevel;
@@ -442,7 +445,7 @@ public class LanguageLevelChecker<T> {
 
         @Override
         public Void visit(ASTImplicitClassDeclaration node, T data) {
-            check(node, PreviewFeature.IMPLICITLY_DECLARED_CLASSES_AND_INSTANCE_MAIN_METHODS, data);
+            check(node, RegularLanguageFeature.COMPACT_SOURCE_FILES_AND_INSTANCE_MAIN_METHODS, data);
             return null;
         }
 
@@ -463,7 +466,7 @@ public class LanguageLevelChecker<T> {
                 check(node, RegularLanguageFeature.STATIC_IMPORT, data);
             }
             if (node.isModuleImport()) {
-                check(node, PreviewFeature.MODULE_IMPORT_DECLARATIONS, data);
+                check(node, RegularLanguageFeature.MODULE_IMPORT_DECLARATIONS, data);
             }
             return null;
         }
@@ -568,6 +571,15 @@ public class LanguageLevelChecker<T> {
         @Override
         public Void visit(ASTLambdaExpression node, T data) {
             check(node, RegularLanguageFeature.LAMBDA_EXPRESSIONS, data);
+            return null;
+        }
+
+
+        @Override
+        public Void visit(ASTLambdaParameter node, T data) {
+            if (node.hasVarKeyword()) {
+                check(node, RegularLanguageFeature.VAR_KEYWORD_IN_LAMBDA_PARAMETER, data);
+            }
             return null;
         }
 
@@ -682,12 +694,6 @@ public class LanguageLevelChecker<T> {
         }
 
         @Override
-        public Void visit(ASTTemplateExpression node, T data) {
-            check(node, PreviewFeature.STRING_TEMPLATES, data);
-            return null;
-        }
-
-        @Override
         public Void visit(ASTUnnamedPattern node, T data) {
             check(node, RegularLanguageFeature.UNNAMED_VARIABLES_AND_PATTERNS, data);
             return null;
@@ -721,7 +727,7 @@ public class LanguageLevelChecker<T> {
             super.visit(node, data);
             if (node.getBody().descendants(ASTExplicitConstructorInvocation.class).nonEmpty()) {
                 if (!(node.getBody().getFirstChild() instanceof ASTExplicitConstructorInvocation)) {
-                    check(node, PreviewFeature.FLEXIBLE_CONSTRUCTOR_BODIES, data);
+                    check(node, RegularLanguageFeature.FLEXIBLE_CONSTRUCTOR_BODIES, data);
                 }
             }
             return null;

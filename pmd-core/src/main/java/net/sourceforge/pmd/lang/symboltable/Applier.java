@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -7,6 +7,10 @@ package net.sourceforge.pmd.lang.symboltable;
 import java.util.Iterator;
 import java.util.function.Predicate;
 
+/**
+ * @deprecated Since 7.19.0. For more info, see {@link net.sourceforge.pmd.lang.symboltable}.
+ */
+@Deprecated
 public final class Applier {
 
     private Applier() {

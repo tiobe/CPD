@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -26,9 +26,9 @@ public final class RootScope extends AbstractModelicaScope {
     void resolveBuiltin(ResolutionContext result, CompositeName name) {
         if (!name.isEmpty() && name.getTail().isEmpty()) {
             String simpleName = name.getHead();
-            for (ModelicaBuiltinType.BaseType tpe: ModelicaBuiltinType.BaseType.values()) {
-                if (tpe.getName().equals(simpleName)) {
-                    result.addCandidate(new ModelicaBuiltinType(tpe));
+            for (ModelicaBuiltinType.BaseType type: ModelicaBuiltinType.BaseType.values()) {
+                if (type.getName().equals(simpleName)) {
+                    result.addCandidate(new ModelicaBuiltinType(type));
                 }
             }
         }

@@ -19,6 +19,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.pcollections.HashTreePSet;
 import org.pcollections.PSet;
 
+import net.sourceforge.pmd.lang.LanguageRegistry;
+import net.sourceforge.pmd.lang.LanguageVersion;
 import net.sourceforge.pmd.lang.java.ast.ASTTypeDeclaration;
 import net.sourceforge.pmd.lang.java.symbols.SymbolicValue.SymAnnot;
 import net.sourceforge.pmd.lang.java.symbols.SymbolicValue.SymEnum;
@@ -27,6 +29,7 @@ import net.sourceforge.pmd.lang.java.types.JClassType;
 import net.sourceforge.pmd.lang.java.types.JPrimitiveType;
 import net.sourceforge.pmd.lang.java.types.JTypeMirror;
 import net.sourceforge.pmd.lang.java.types.Substitution;
+import net.sourceforge.pmd.util.OptionalBool;
 
 
 /**
@@ -86,10 +89,14 @@ public interface JClassSymbol extends JTypeDeclSymbol,
 
     /**
      * Returns the method or constructor this symbol is declared in, if
-     * it represents a {@linkplain #isLocalClass() local class declaration}.
+     * it represents a {@linkplain #isLocalClass() local class declaration}
+     * or an anonymous class declaration.
      *
      * <p>Notice, that this returns null also if this class is local to
-     * a class or instance initializer.
+     * a class or instance initializer, a field initializer, and some other
+     * special circumstances.
+     *
+     * @see Class#getEnclosingMethod()
      */
     @Nullable JExecutableSymbol getEnclosingMethod();
 
@@ -109,8 +116,7 @@ public interface JClassSymbol extends JTypeDeclSymbol,
 
 
     /** Returns a class with the given name defined in this class. */
-    @Nullable
-    default JClassSymbol getDeclaredClass(String name) {
+    default @Nullable JClassSymbol getDeclaredClass(String name) {
         for (JClassSymbol klass : getDeclaredClasses()) {
             if (klass.nameEquals(name)) {
                 return klass;
@@ -161,8 +167,7 @@ public interface JClassSymbol extends JTypeDeclSymbol,
 
 
     /** Returns a field with the given name defined in this class. */
-    @Nullable
-    default JFieldSymbol getDeclaredField(String name) {
+    default @Nullable JFieldSymbol getDeclaredField(String name) {
         for (JFieldSymbol field : getDeclaredFields()) {
             if (field.nameEquals(name)) {
                 return field;
@@ -238,6 +243,49 @@ public interface JClassSymbol extends JTypeDeclSymbol,
     boolean isAnonymousClass();
 
     /**
+     * Return the list of permitted subclasses or subinterfaces, as defined in the
+     * {@code permits} clause of a sealed class or interface. If this class is sealed
+     * but has no permits clause, the permitted subtypes are inferred from the types
+     * in the compilation unit. If the class is not sealed, returns an empty list.
+     *
+     * <p>Note that an enum class for which some constants declare a body is technically
+     * implicitly sealed, and implicitly permits only the anonymous classes for those enum
+     * constants. For consistency, this method will return only symbols that have a canonical
+     * name, and therefore always return an empty list for enums.
+     *
+     * @see #isSealed()
+     */
+    default List<JClassSymbol> getPermittedSubtypes() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * Return true if this type is sealed. Then it has a non-empty list of permitted
+     * subclasses (or it is a compile-time error). Note that there is no trace of the
+     * non-sealed modifier in class files. A class must have the {@code non-sealed}
+     * modifier if it is not sealed, not final, and has a sealed supertype.
+     *
+     * <p>Note that an enum class for which some constants declare a body is technically
+     * implicitly sealed, and implicitly permits only the anonymous classes for those enum
+     * constants. For consistency with {@link #getPermittedSubtypes()}, we treat such enums
+     * as not sealed.
+     *
+     * @see #getPermittedSubtypes()
+     */
+    default boolean isSealed() {
+        return !getPermittedSubtypes().isEmpty();
+    }
+
+    /**
+     * Return true if this type is final, that is, does not admit subtypes. Note that
+     * array types have both modifiers final and abstract. Note also that enum classes
+     * may be non-final if they have constants that declare an anonymous body.
+     */
+    default boolean isFinal() {
+        return Modifier.isFinal(getModifiers());
+    }
+
+    /**
      * Return the simple names of all annotation attributes. If this
      * is not an annotation type, return an empty set.
      */
@@ -286,26 +334,65 @@ public interface JClassSymbol extends JTypeDeclSymbol,
      * Return whether annotations of this annotation type apply to the
      * given construct, as per the {@link Target} annotation. Return
      * false if this is not an annotation.
+     * @deprecated Since 7.17.0. Use {@link #annotationAppliesToContext(ElementType, LanguageVersion)}
      */
+    @Deprecated
     default boolean annotationAppliesTo(ElementType elementType) {
+        LanguageVersion javaVer = LanguageRegistry.PMD.getLanguageById("java").getDefaultVersion();
+        return annotationAppliesToContext(elementType, javaVer) != OptionalBool.NO;
+    }
+
+    /**
+     * Return whether annotations of this annotation type apply to the
+     * given construct, as per the {@link Target} annotation. Return
+     * false if this is not an annotation. May return unknown if we are
+     * not sure.
+     * @since 7.17.0
+     */
+    default OptionalBool annotationAppliesToContext(ElementType elementType, LanguageVersion javaVersion) {
+        if (isUnresolved()) {
+            return OptionalBool.UNKNOWN;
+        }
         if (!isAnnotation()) {
-            return false;
+            return OptionalBool.NO;
         }
         SymAnnot target = getDeclaredAnnotation(Target.class);
         if (target == null) {
-            // If an @Target meta-annotation is not present on an annotation type T,
-            // then an annotation of type T may be written as a modifier
-            // for any declaration except a type parameter declaration.
-            return elementType != ElementType.TYPE_PARAMETER;
+            /*
+             If a @Target meta-annotation is not present on an annotation type T, then
+             behavior depends on java version. It changed a couple of times between different
+             java versions:
+             - java 5-7: all decl except TP
+             - java 8-12: all decl except TP, no type
+             - java 13-16: all decl, all type
+             - java 17+:  all decl, no type
+             */
+            if (elementType == ElementType.TYPE_PARAMETER) {
+                return OptionalBool.definitely(javaVersion.compareToVersion("13") >= 0);
+            } else if (elementType == ElementType.TYPE_USE) {
+                return OptionalBool.definitely(javaVersion.compareToVersion("13") >= 0
+                                                   && javaVersion.compareToVersion("17") < 0);
+            } else {
+                return OptionalBool.YES;
+            }
         }
-        return target.attributeContains("value", elementType).isTrue();
+        return target.attributeContains("value", elementType);
     }
 
-    // todo isSealed + getPermittedSubclasses
-    //  (isNonSealed is not so useful I think)
+    /**
+     * Return whether this is an annotation type, and can apply to type use.
+     * Whether a specific annotation of this type is a type annotation also depends
+     * on the context where it appears, as this annotation type may be applicable
+     * to other contexts than {@link ElementType#TYPE_USE}.
+     * @since 7.17.0
+     */
+    default OptionalBool mayBeTypeAnnotation(LanguageVersion lv) {
+        return annotationAppliesToContext(ElementType.TYPE_USE, lv);
+    }
 
     /**
      * This returns true if this is not an interface, primitive or array.
+     * Note that this includes in particular records and enums.
      */
     default boolean isClass() {
         return !isInterface() && !isArray() && !isPrimitive();

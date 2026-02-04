@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -9,14 +9,17 @@ import java.io.Writer;
 import java.util.Iterator;
 import java.util.List;
 
+import net.sourceforge.pmd.annotation.InternalApi;
+
 /**
  * A generic writer that formats input items into rows and columns per the
  * provided column descriptors.
  *
  * @author Brian Remedios
  * @param <T>
- * @deprecated This is internal API and an implementation detail for {@link CSVRenderer}.
+ * @apiNote This is internal API and an implementation detail for {@link CSVRenderer}.
  */
+@InternalApi
 class CSVWriter<T> {
 
     private final String separator; // e.g., the comma

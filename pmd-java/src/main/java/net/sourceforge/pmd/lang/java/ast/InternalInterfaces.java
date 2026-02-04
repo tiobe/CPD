@@ -17,11 +17,14 @@ import net.sourceforge.pmd.lang.ast.NodeStream;
  * uniform names on related concepts. Maybe it makes sense to publish some of
  * them at some point.
  */
+// Suppressing MissingStaticMethodInNonInstantiatableClass: This class is used here as a namespace
+// for related interfaces. The outer class indeed cannot be instantiated and doesn't have any static
+// methods. This is similar like #1652.
 @SuppressWarnings("PMD.MissingStaticMethodInNonInstantiatableClass")
 final class InternalInterfaces {
 
     private InternalInterfaces() {
-        // utility class
+        // just a namespace for related interfaces
     }
 
     interface OperatorLike {
@@ -39,22 +42,19 @@ final class InternalInterfaces {
     interface BinaryExpressionLike extends ASTExpression {
 
         /** Returns the left-hand-side operand. */
-        @NonNull
-        default ASTExpression getLeftOperand() {
+        default @NonNull ASTExpression getLeftOperand() {
             return (ASTExpression) getChild(0);
         }
 
 
         /** Returns the right-hand side operand. */
-        @NonNull
-        default ASTExpression getRightOperand() {
+        default @NonNull ASTExpression getRightOperand() {
             return (ASTExpression) getChild(1);
         }
 
 
         /** Returns the operator. */
-        @NonNull
-        OperatorLike getOperator();
+        @NonNull OperatorLike getOperator();
     }
 
     /**
@@ -66,8 +66,7 @@ final class InternalInterfaces {
 
         /** Returns the first child of this node, never null. */
         @Override
-        @NonNull
-        default JavaNode getFirstChild() {
+        default @NonNull JavaNode getFirstChild() {
             assert getNumChildren() > 0;
             return getChild(0);
         }
@@ -75,8 +74,7 @@ final class InternalInterfaces {
 
         /** Returns the last child of this node, never null. */
         @Override
-        @NonNull
-        default JavaNode getLastChild() {
+        default @NonNull JavaNode getLastChild() {
             assert getNumChildren() > 0;
             return getChild(getNumChildren() - 1);
         }
@@ -85,8 +83,7 @@ final class InternalInterfaces {
     interface AllChildrenAreOfType<T extends JavaNode> extends JavaNode {
 
         @Override
-        @Nullable
-        default T getFirstChild() {
+        default @Nullable T getFirstChild() {
             if (getNumChildren() == 0) {
                 return null;
             }
@@ -95,8 +92,7 @@ final class InternalInterfaces {
 
 
         @Override
-        @Nullable
-        default T getLastChild() {
+        default @Nullable T getLastChild() {
             if (getNumChildren() == 0) {
                 return null;
             }
@@ -112,8 +108,7 @@ final class InternalInterfaces {
 
         /** Returns the first child of this node, never null. */
         @Override
-        @NonNull
-        default T getFirstChild() {
+        default @NonNull T getFirstChild() {
             assert getNumChildren() > 0 : "No children for node implementing AtLeastOneChild " + this;
             return (T) getChild(0);
         }
@@ -121,8 +116,7 @@ final class InternalInterfaces {
 
         /** Returns the last child of this node, never null. */
         @Override
-        @NonNull
-        default T getLastChild() {
+        default @NonNull T getLastChild() {
             assert getNumChildren() > 0 : "No children for node implementing AtLeastOneChild " + this;
             return (T) getChild(getNumChildren() - 1);
         }

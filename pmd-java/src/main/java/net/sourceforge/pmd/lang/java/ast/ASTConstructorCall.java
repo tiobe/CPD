@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -97,8 +97,7 @@ public final class ASTConstructorCall extends AbstractInvocationExpr implements 
     }
 
 
-    @Nullable
-    public ASTAnonymousClassDeclaration getAnonymousClassDeclaration() {
+    public @Nullable ASTAnonymousClassDeclaration getAnonymousClassDeclaration() {
         return isAnonymousClass()
                ? (ASTAnonymousClassDeclaration) getLastChild()
                : null;

@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -80,7 +80,7 @@ public final class TimeTracker {
     }
 
     /**
-     * Initialize a thread, starting to track it's own time.
+     * Initialize a thread, starting to track its own time.
      */
     public static void initThread() {
         if (!trackTime) {

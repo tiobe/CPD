@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -31,8 +31,7 @@ public final class ASTAssignmentExpression extends AbstractJavaExpr implements I
 
     /** Returns the left-hand side, ie the expression being assigned to. */
     @Override
-    @NonNull
-    public ASTAssignableExpr getLeftOperand() {
+    public @NonNull ASTAssignableExpr getLeftOperand() {
         return (ASTAssignableExpr) getChild(0);
     }
 
@@ -46,8 +45,7 @@ public final class ASTAssignmentExpression extends AbstractJavaExpr implements I
 
 
     @Override
-    @NonNull
-    public AssignmentOp getOperator() {
+    public @NonNull AssignmentOp getOperator() {
         return operator;
     }
 

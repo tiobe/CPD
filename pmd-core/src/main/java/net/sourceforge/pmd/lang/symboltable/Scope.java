@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -17,7 +17,10 @@ import java.util.Set;
  * @see <a href=
  *      "http://docs.oracle.com/javase/specs/jls/se7/html/jls-6.html#jls-6.3">Java
  *      Language Specification, 6.3: Scope of a Declaration</a>
+ *
+ * @deprecated Since 7.19.0. For more info, see {@link net.sourceforge.pmd.lang.symboltable}.
  */
+@Deprecated
 public interface Scope {
     /**
      * Retrieves this scope's parent
@@ -49,7 +52,7 @@ public interface Scope {
 
     /**
      * Helper method to get only a specific type of name declarations. The
-     * return map elemens have already been casted to the correct type. This
+     * return map elements have already been casted to the correct type. This
      * method usually returns a subset of {@link #getDeclarations()}.
      *
      * @param clazz

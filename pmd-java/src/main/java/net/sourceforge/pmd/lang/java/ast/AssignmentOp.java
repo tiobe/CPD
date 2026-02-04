@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -81,8 +81,7 @@ public enum AssignmentOp implements OperatorLike {
      * if this is a compound operator, otherwise returns
      * null.
      */
-    @Nullable
-    public BinaryOp getBinaryOp() {
+    public @Nullable BinaryOp getBinaryOp() {
         return binaryOp;
     }
 
