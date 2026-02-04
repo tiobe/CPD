@@ -42,7 +42,6 @@ public class CppCpdLexer extends JavaccCpdLexer {
         ignoreLiteralSequences = cppProperties.getProperty(CpdLanguageProperties.CPD_IGNORE_LITERAL_SEQUENCES);
         ignoreIdentifierAndLiteralSequences = cppProperties.getProperty(CpdLanguageProperties.CPD_IGNORE_LITERAL_AND_IDENTIFIER_SEQUENCES);
         ignoreArrayInitializations = cppProperties.getProperty(CpdLanguageProperties.CPD_IGNORE_SEQUENCE_INITIALIZATION);
-        ignoreIdentifierAndLiteralSequences = cppProperties.getProperty(CpdLanguageProperties.CPD_IGNORE_LITERAL_AND_IDENTIFIER_SEQUENCES);
         ignoreLiterals = cppProperties.getProperty(CpdLanguageProperties.CPD_ANONYMIZE_LITERALS);
         ignoreIdentifiers = cppProperties.getProperty(CpdLanguageProperties.CPD_ANONYMIZE_IDENTIFIERS);
         String skipBlocksPattern = cppProperties.getProperty(CppLanguageModule.CPD_SKIP_BLOCKS);
@@ -78,7 +77,7 @@ public class CppCpdLexer extends JavaccCpdLexer {
 
     @Override
     protected TokenManager<JavaccToken> filterTokenStream(final TokenManager<JavaccToken> tokenManager) {
-        return new CppTokenFilter(tokenManager, ignoreLiteralSequences, ignoreIdentifierAndLiteralSequuences, ignoreArrayInitializations);
+        return new CppTokenFilter(tokenManager, ignoreLiteralSequences, ignoreIdentifierAndLiteralSequences, ignoreArrayInitializations);
     }
 
     @Override

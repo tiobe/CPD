@@ -5,11 +5,8 @@
 package net.sourceforge.pmd.cli.commands.internal;
 
 import java.io.IOException;
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
