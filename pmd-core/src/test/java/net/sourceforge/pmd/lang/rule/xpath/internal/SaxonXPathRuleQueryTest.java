@@ -18,8 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
-import org.checkerframework.checker.nullness.qual.NonNull;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -30,9 +28,9 @@ import net.sourceforge.pmd.lang.ast.DummyNode.DummyRootNode;
 import net.sourceforge.pmd.lang.ast.DummyNodeWithListAndEnum;
 import net.sourceforge.pmd.lang.ast.Node;
 import net.sourceforge.pmd.lang.ast.RootNode;
+import net.sourceforge.pmd.lang.document.Chars;
 import net.sourceforge.pmd.lang.rule.xpath.PmdXPathException;
 import net.sourceforge.pmd.lang.rule.xpath.XPathVersion;
-import net.sourceforge.pmd.lang.rule.xpath.impl.XPathFunctionDefinition;
 import net.sourceforge.pmd.lang.rule.xpath.impl.XPathHandler;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
 import net.sourceforge.pmd.properties.PropertyFactory;
@@ -144,6 +142,19 @@ class SaxonXPathRuleQueryTest {
     }
 
     @Test
+    void testCharsAttributes() {
+        DummyRootNode dummy = helper.parse("(a(b))");
+        Chars value = Chars.wrap("__abcd__").slice(2, 4);
+        //                          ----
+        dummy.setXPathAttribute("CharsAttr", value, Chars.class);
+
+        List<Node> result = assertQuery(1,
+            "//dummyRootNode[@CharsAttr = 'abcd']", dummy);
+
+        assertEquals(dummy, result.get(0));
+    }
+
+    @Test
     void ruleChainVisits() {
         SaxonXPathRuleQuery query = createQuery("//dummyNode[@Image='baz']/foo | //bar[@Public = 'true'] | //dummyNode[@Public = false()] | //dummyNode");
         List<String> ruleChainVisits = query.getRuleChainVisits();
@@ -177,8 +188,8 @@ class SaxonXPathRuleQueryTest {
         assertEquals(1, ruleChainVisits.size());
         assertTrue(ruleChainVisits.contains("dummyNode"));
         assertEquals(2, query.nodeNameToXPaths.size());
-        assertExpression("self::node()[Q{http://pmd.sourceforge.net/pmd-dummy}imageIs(exactly-one(convertTo_xs:string(data(attribute::attribute(Image)))))]", query.getExpressionsForLocalNameOrDefault("dummyNode").get(0));
-        assertExpression("((/)/descendant::element(Q{}dummyNode))[Q{http://pmd.sourceforge.net/pmd-dummy}imageIs(exactly-one(convertTo_xs:string(data(attribute::attribute(Image)))))]", query.getFallbackExpr());
+        assertExpression("self::node()[imageIs(exactly-one(convertTo_xs:string(data(((.) treat as node())/attribute::attribute(Image)))))]", query.getExpressionsForLocalNameOrDefault("dummyNode").get(0));
+        assertExpression("docOrder(((/)/descendant-or-self::node())/(child::element(dummyNode)[imageIs(exactly-one(convertTo_xs:string(data(((.) treat as node())/attribute::attribute(Image)))))]))", query.getFallbackExpr());
     }
 
     /**
@@ -331,7 +342,7 @@ class SaxonXPathRuleQueryTest {
         assertEquals(1, ruleChainVisits.size());
         assertTrue(ruleChainVisits.contains("dummyNode"));
         assertEquals(2, query.nodeNameToXPaths.size());
-        assertExpression("let $v0 := imageIs(bar) return ((self::node()[ends-with(zero-or-one(convertTo_xs:string(data(attribute::attribute(Image)))), foo)])[$v0])", query.nodeNameToXPaths.get("dummyNode").get(0));
+        assertExpression("let $v0 := imageIs(bar) return ((self::node()[ends-with(zero-or-one(convertTo_xs:string(data(((.) treat as node())/attribute::attribute(Image)))), foo)])[$v0])", query.nodeNameToXPaths.get("dummyNode").get(0));
     }
 
     @Test
@@ -373,7 +384,7 @@ class SaxonXPathRuleQueryTest {
         assertTrue(ruleChainVisits.contains("WhileStatement"));
         assertTrue(ruleChainVisits.contains("DoStatement"));
 
-        final String expectedSubexpression = "(self::node()/descendant::element(dummyNode))[imageIs(exactly-one(convertTo_xs:string(data(attribute::attribute(Image)))))]";
+        final String expectedSubexpression = "((self::node()/descendant-or-self::node())/child::element(dummyNode))[imageIs(exactly-one(convertTo_xs:string(data(((.) treat as node())/attribute::attribute(Image)))))]";
         assertExpression(expectedSubexpression, query.nodeNameToXPaths.get("ForStatement").get(0));
         assertExpression(expectedSubexpression, query.nodeNameToXPaths.get("WhileStatement").get(0));
         assertExpression(expectedSubexpression, query.nodeNameToXPaths.get("DoStatement").get(0));
@@ -420,28 +431,8 @@ class SaxonXPathRuleQueryTest {
             xpath,
             XPathVersion.DEFAULT,
             props,
-            XPathHandler.getHandlerForFunctionDefs(imageIsFunction()),
+            XPathHandler.getHandlerForFunctionDefs(DummyLanguageModule.imageIsFunction()),
             DeprecatedAttrLogger.noop()
         );
-    }
-
-    @NonNull
-    private static XPathFunctionDefinition imageIsFunction() {
-        return new XPathFunctionDefinition("imageIs", DummyLanguageModule.getInstance()) {
-            @Override
-            public Type[] getArgumentTypes() {
-                return new Type[] {Type.SINGLE_STRING};
-            }
-
-            @Override
-            public Type getResultType() {
-                return Type.SINGLE_BOOLEAN;
-            }
-
-            @Override
-            public FunctionCall makeCallExpression() {
-                return (contextNode, arguments) -> StringUtils.equals(arguments[0].toString(), contextNode.getImage());
-            }
-        };
     }
 }

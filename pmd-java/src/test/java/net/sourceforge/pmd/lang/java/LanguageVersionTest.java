@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -39,11 +39,14 @@ class LanguageVersionTest extends AbstractLanguageVersionTest {
                 new TestDescriptor(java, "20"),
                 new TestDescriptor(java, "21"),
                 new TestDescriptor(java, "22"),
-                new TestDescriptor(java, "22-preview"),
                 new TestDescriptor(java, "23"),
-                new TestDescriptor(java, "23-preview"),
+                new TestDescriptor(java, "24"),
+                new TestDescriptor(java, "25"),
+                new TestDescriptor(java, "25-preview"),
+                new TestDescriptor(java, "26"),
+                new TestDescriptor(java, "26-preview"),
 
-                defaultVersionIs(java, "23"),
+                defaultVersionIs(java, "26"),
 
                 // this one won't be found: case-sensitive!
                 versionDoesNotExist("JAVA", "JAVA", "1.7"),

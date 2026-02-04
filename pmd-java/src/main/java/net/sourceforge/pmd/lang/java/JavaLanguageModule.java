@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -44,9 +44,13 @@ public class JavaLanguageModule extends LanguageModuleBase implements PmdCapable
                               .addVersion("20")
                               .addVersion("21")
                               .addVersion("22")
-                              .addVersion("22-preview")
-                              .addDefaultVersion("23") // 23 is the default
-                              .addVersion("23-preview"));
+                              .addVersion("23")
+                              .addVersion("24")
+                              .addVersion("25")
+                              .addVersion("25-preview")
+                              .addDefaultVersion("26") // 26 is the default
+                              .addVersion("26-preview")
+        );
     }
 
     public static JavaLanguageModule getInstance() {

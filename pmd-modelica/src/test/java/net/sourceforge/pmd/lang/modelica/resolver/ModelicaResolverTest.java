@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -30,20 +30,10 @@ class ModelicaResolverTest {
         assertEquals(hidden, result.getHiddenCandidates().size());
     }
 
-    private ResolutionResult<ResolvableEntity> resolveIn(int best, int hidden, ResolutionState state, SubcomponentResolver resolver, boolean absolute, String[] names) {
-        ResolutionResult<ResolvableEntity> result = resolver.safeResolveComponent(ResolvableEntity.class, state, CompositeName.create(absolute, names));
-        ensureCounts(result, best, hidden);
-        return result;
-    }
-
     private ResolutionResult<ResolvableEntity> resolveIn(int best, int hidden, ResolutionState state, ModelicaScope resolver, boolean absolute, String[] names) {
         ResolutionResult<ResolvableEntity> result = resolver.safeResolveLexically(ResolvableEntity.class, state, CompositeName.create(absolute, names));
         ensureCounts(result, best, hidden);
         return result;
-    }
-
-    private ResolutionResult<ResolvableEntity> testResolvedTypeCount(int best, int hidden, SubcomponentResolver scope, boolean absolute, String... names) {
-        return resolveIn(best, hidden, ResolutionState.forType(), scope, absolute, names);
     }
 
     private ResolutionResult<ResolvableEntity> testResolvedTypeCount(int best, int hidden, ModelicaScope scope, boolean absolute, String... names) {
@@ -283,9 +273,9 @@ class ModelicaResolverTest {
         ModelicaComponentDeclaration x = (ModelicaComponentDeclaration) xs.get(0);
         ResolutionResult<ModelicaType> xTypes = x.getTypeCandidates();
         ensureCounts(xTypes, 1, 0);
-        ResolvableEntity tpe = xTypes.getBestCandidates().get(0);
-        assertTrue(tpe instanceof ModelicaBuiltinType);
-        assertEquals(ModelicaBuiltinType.BaseType.REAL, ((ModelicaBuiltinType) tpe).getBaseType());
+        ResolvableEntity type = xTypes.getBestCandidates().get(0);
+        assertTrue(type instanceof ModelicaBuiltinType);
+        assertEquals(ModelicaBuiltinType.BaseType.REAL, ((ModelicaBuiltinType) type).getBaseType());
     }
 
     @Test

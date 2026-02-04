@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -13,8 +13,10 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 import net.sourceforge.pmd.lang.ast.Node;
 import net.sourceforge.pmd.lang.java.ast.ASTAssignableExpr.ASTNamedReferenceExpr;
+import net.sourceforge.pmd.lang.java.internal.JavaLanguageProcessor;
 import net.sourceforge.pmd.lang.java.symbols.JVariableSymbol;
 import net.sourceforge.pmd.lang.java.types.JTypeMirror;
+import net.sourceforge.pmd.lang.java.types.TypeTestUtil;
 
 // @formatter:off
 /**
@@ -82,14 +84,12 @@ public final class ASTVariableId extends AbstractTypedSymbolDeclarator<JVariable
      * returns {@code int}, and this method returns the dimensions that follow
      * the variable ID. Returns null if there are no such dimensions.
      */
-    @Nullable
-    public ASTArrayDimensions getExtraDimensions() {
+    public @Nullable ASTArrayDimensions getExtraDimensions() {
         return children(ASTArrayDimensions.class).first();
     }
 
-    @NonNull
     @Override
-    public ASTModifierList getModifiers() {
+    public @NonNull ASTModifierList getModifiers() {
         // delegates modifiers
         return getModifierOwnerParent().getModifiers();
     }
@@ -99,7 +99,7 @@ public final class ASTVariableId extends AbstractTypedSymbolDeclarator<JVariable
      * There may not be an explicit final modifier, e.g. for enum constants.
      */
     public boolean isFinal() {
-        return hasModifiers(JModifier.FINAL);
+        return hasModifiers(JModifier.FINAL) || isLombokVal(getTypeNode());
     }
 
     /**
@@ -261,7 +261,33 @@ public final class ASTVariableId extends AbstractTypedSymbolDeclarator<JVariable
      * since the type node is absent.
      */
     public boolean isTypeInferred() {
-        return getTypeNode() == null;
+        ASTType typeNode = getTypeNode();
+        return typeNode == null || isLombokValOrVar(typeNode, false);
+    }
+
+    static boolean isLombokVal(@Nullable ASTType typeNode) {
+        return isLombokValOrVar(typeNode, true);
+    }
+
+    private static boolean isLombokValOrVar(@Nullable ASTType typeNode, boolean onlyVal) {
+        if (!(typeNode instanceof ASTClassType)) {
+            return false;
+        }
+        String simpleName = ((ASTClassType) typeNode).getSimpleName();
+        if (!"val".equals(simpleName) && (onlyVal || !"var".equals(simpleName))) {
+            // do a first filter to avoid having to query the language processor
+            return false;
+        }
+        @SuppressWarnings("PMD.CloseResource")
+        JavaLanguageProcessor javaLanguage = (JavaLanguageProcessor) typeNode.getAstInfo().getLanguageProcessor();
+        if (!javaLanguage.hasFirstClassLombokSupport()) {
+            return false;
+        }
+        // Note that if language version is >= 10, then a variable cannot have
+        // type lombok.var unless it uses a qualified name. `var` is interpreted
+        // as a keyword by the parser and produces no type node.
+        return TypeTestUtil.isExactlyA("lombok.val", typeNode)
+            || !onlyVal && TypeTestUtil.isExactlyA("lombok.var", typeNode);
     }
 
     /**
@@ -276,8 +302,7 @@ public final class ASTVariableId extends AbstractTypedSymbolDeclarator<JVariable
     /**
      * Returns the initializer of the variable, or null if it doesn't exist.
      */
-    @Nullable
-    public ASTExpression getInitializer() {
+    public @Nullable ASTExpression getInitializer() {
         if (getParent() instanceof ASTVariableDeclarator) {
             return ((ASTVariableDeclarator) getParent()).getInitializer();
         }
@@ -290,8 +315,7 @@ public final class ASTVariableId extends AbstractTypedSymbolDeclarator<JVariable
      * type.
      */
     // TODO unreliable, not typesafe and not useful, should be deprecated
-    @Nullable
-    public Node getTypeNameNode() {
+    public @Nullable Node getTypeNameNode() {
         return getTypeNode();
     }
 
@@ -337,7 +361,6 @@ public final class ASTVariableId extends AbstractTypedSymbolDeclarator<JVariable
      */
     // @formatter:on
     @Override
-    @SuppressWarnings("PMD.UselessOverridingMethod")
     public @NonNull JTypeMirror getTypeMirror() {
         return super.getTypeMirror();
     }

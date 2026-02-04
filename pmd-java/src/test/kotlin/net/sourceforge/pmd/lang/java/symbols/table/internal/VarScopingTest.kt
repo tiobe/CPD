@@ -7,6 +7,7 @@ package net.sourceforge.pmd.lang.java.symbols.table.internal
 import io.kotest.assertions.withClue
 import io.kotest.matchers.collections.beEmpty
 import io.kotest.matchers.collections.shouldBeEmpty
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import net.sourceforge.pmd.lang.java.ast.*
@@ -15,8 +16,7 @@ import net.sourceforge.pmd.lang.java.ast.JavaVersion.J22
 import net.sourceforge.pmd.lang.java.symbols.JFieldSymbol
 import net.sourceforge.pmd.lang.java.symbols.JFormalParamSymbol
 import net.sourceforge.pmd.lang.java.symbols.JLocalVariableSymbol
-import net.sourceforge.pmd.lang.java.types.methodCalls
-import net.sourceforge.pmd.lang.java.types.shouldHaveType
+import net.sourceforge.pmd.lang.java.types.*
 import net.sourceforge.pmd.lang.test.ast.*
 import net.sourceforge.pmd.lang.test.ast.shouldBe
 import java.lang.reflect.Modifier
@@ -237,7 +237,7 @@ class VarScopingTest : ProcessorTestSpec({
         }
 
         doTest("Inside fallthrough: var is in scope") {
-            // this is suprising but legal, the var is just not definitely
+            // this is surprising but legal, the var is just not definitely
             // assigned at the point of use
             iAccess2 shouldResolveToLocal ivar
         }
@@ -503,4 +503,31 @@ class VarScopingTest : ProcessorTestSpec({
             }
         }
     }
+
+    parserTest("Record header has record fields in scope") {
+        val acu = parser.parse(
+            """
+
+            record Foo(@Annot(FIELD) // refer to members of Foo
+                       long component) {
+                public static final int FIELD = 6;
+                @interface Annot { int value(); }
+            }
+            """.trimIndent()
+        )
+
+        val (typeFoo, typeAnnot) = acu.declaredTypeSignatures()
+        acu.withTypeDsl {
+            val ref = acu.varAccesses("FIELD").firstOrThrow()
+            ref.referencedSym.shouldNotBeNull()
+            ref.referencedSym.shouldBeA<JFieldSymbol> {
+                it.enclosingClass shouldBe typeFoo.symbol
+            }
+            ref shouldHaveType int
+
+            val annot = acu.descendants(ASTAnnotation::class.java).firstOrThrow()
+            annot shouldHaveType typeAnnot
+        }
+    }
+
 })

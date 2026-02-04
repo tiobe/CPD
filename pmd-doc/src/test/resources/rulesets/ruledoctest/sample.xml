@@ -142,7 +142,7 @@ public class Foo {
           class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_sample.html#jumbledincrementer">
      <description>
-Avoid jumbled loop incrementers - its usually a mistake, and is confusing even if intentional.
+Avoid jumbled loop incrementers - it's usually a mistake, and is confusing even if intentional.
      </description>
      <priority>3</priority>
      <properties>
@@ -228,4 +228,12 @@ RuleTag with full category and without quotes: Use {% rule java/sample/RenamedRu
 
     <rule name="MovedRule" ref="rulesets/ruledoctest/sample2.xml/JumbledIncrementer"/>
 
+    <rule name="SampleRuleWithEnumProperties"
+          language="java"
+          since="7.21.0"
+          message="Message"
+          class="net.sourceforge.pmd.doc.internal.SampleRuleWithEnumPropertiesRule">
+        <description>This rule is for testing enum properties</description>
+        <priority>3</priority>
+    </rule>
 </ruleset>

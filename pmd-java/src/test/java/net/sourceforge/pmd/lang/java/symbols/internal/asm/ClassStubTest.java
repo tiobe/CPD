@@ -6,7 +6,10 @@ package net.sourceforge.pmd.lang.java.symbols.internal.asm;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -17,6 +20,7 @@ import java.lang.reflect.Modifier;
 import java.util.List;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.pcollections.PSet;
 
@@ -24,6 +28,8 @@ import net.sourceforge.pmd.lang.java.JavaParsingHelper;
 import net.sourceforge.pmd.lang.java.symbols.JClassSymbol;
 import net.sourceforge.pmd.lang.java.symbols.JConstructorSymbol;
 import net.sourceforge.pmd.lang.java.symbols.JRecordComponentSymbol;
+import net.sourceforge.pmd.lang.java.symbols.testdata.EnumConstantWithBody;
+import net.sourceforge.pmd.lang.java.symbols.testdata.LocalClasses;
 import net.sourceforge.pmd.lang.java.types.JClassType;
 import net.sourceforge.pmd.lang.java.types.JTypeMirror;
 import net.sourceforge.pmd.lang.java.types.Substitution;
@@ -118,6 +124,65 @@ class ClassStubTest {
 
     }
 
+    @Test
+    void testLoadScalaPrivateClassInInterface() {
+        TypeSystem ts = TypeSystem.usingClassLoaderClasspath(JavaParsingHelper.class.getClassLoader());
+        JClassSymbol itf = loadScalaClass(ts, "InterfaceWithPrivateInner");
+        assertThat(itf, hasProperty("interface", equalTo(true)));
+        assertThat(itf.getDeclaredClasses(), hasSize(2));
+
+        JClassSymbol inner = loadScalaClass(ts, "InterfaceWithPrivateInner$Inner");
+        assertThat(inner, sameInstance(itf.getDeclaredClass("Inner")));
+        assertThat(inner, hasProperty("modifiers", equalTo(Modifier.PRIVATE)));
+
+        JClassSymbol innerOfObj = loadScalaClass(ts, "InterfaceWithPrivateInner$AndThen");
+        assertThat(innerOfObj, sameInstance(itf.getDeclaredClass("AndThen")));
+        assertThat(innerOfObj, hasProperty("modifiers", equalTo(Modifier.PRIVATE | Modifier.STATIC)));
+    }
+
+
+    @Test
+    void testLoadAnonClassFromEnum() {
+        TypeSystem ts = TypeSystem.usingClassLoaderClasspath(JavaParsingHelper.class.getClassLoader());
+        JClassSymbol enumClass = loadTestDataClass(ts, "EnumConstantWithBody");
+        assertThat(enumClass, hasProperty("simpleName", equalTo("EnumConstantWithBody")));
+
+        AsmSymbolResolver resolver = (AsmSymbolResolver) ts.bootstrapResolver();
+        JClassSymbol anonClass = resolver.resolveFromInternalNameCannotFail(
+            ClassNamesUtil.getInternalName(EnumConstantWithBody.class) + "$1");
+        assertThat(anonClass, hasProperty("unresolved", equalTo(false)));
+        assertThat(anonClass, hasProperty("simpleName", equalTo("")));
+        assertThat(anonClass.getEnclosingClass(), sameInstance(enumClass));
+    }
+
+    @Test
+    void testLoadLocalClass() {
+        TypeSystem ts = TypeSystem.usingClassLoaderClasspath(JavaParsingHelper.class.getClassLoader());
+        JClassSymbol outerClass = loadTestDataClass(ts, "LocalClasses");
+
+        AsmSymbolResolver resolver = (AsmSymbolResolver) ts.bootstrapResolver();
+        JClassSymbol local1 = resolver.resolveFromInternalNameCannotFail(
+            ClassNamesUtil.getInternalName(LocalClasses.class) + "$1Local1");
+
+        assertThat(local1, hasProperty("unresolved", equalTo(false)));
+        assertThat(local1, hasProperty("simpleName", equalTo("Local1")));
+        assertThat(local1, hasProperty("localClass", equalTo(true)));
+        assertThat(local1, hasProperty("anonymousClass", equalTo(false)));
+        assertThat(local1, hasProperty("enclosingMethod", equalTo(null)));
+        assertThat(local1.getEnclosingClass(), sameInstance(outerClass));
+
+        JClassSymbol local2 = resolver.resolveFromInternalNameCannotFail(
+            ClassNamesUtil.getInternalName(LocalClasses.class) + "$1Local2");
+        assertThat(local2, hasProperty("unresolved", equalTo(false)));
+        assertThat(local2, hasProperty("simpleName", equalTo("Local2")));
+        assertThat(local2, hasProperty("localClass", equalTo(true)));
+        assertThat(local2, hasProperty("anonymousClass", equalTo(false)));
+        assertThat(local2, hasProperty("enclosingMethod", notNullValue()));
+        assertThat(local2.getEnclosingClass(), sameInstance(outerClass));
+    }
+
+
+
 
     private static void assertIsListWithTyAnnotation(JClassType withTyAnnotation) {
         assertThat(withTyAnnotation.getSymbol().getBinaryName(), equalTo("java.util.List"));
@@ -128,11 +193,24 @@ class ClassStubTest {
     }
 
 
+    private static @NonNull JClassSymbol loadScalaClass(TypeSystem typeSystem, String simpleName) {
+        return loadClassInPackage("net.sourceforge.pmd.lang.java.symbols.scalaclasses", simpleName, typeSystem);
+    }
+
+    private static @NonNull JClassSymbol loadTestDataClass(TypeSystem typeSystem, String simpleName) {
+        return loadClassInPackage("net.sourceforge.pmd.lang.java.symbols.testdata", simpleName, typeSystem);
+    }
+
     private static @NonNull JClassSymbol loadRecordClass(TypeSystem typeSystem, String simpleName) {
-        String binaryName = "net.sourceforge.pmd.lang.java.symbols.recordclasses." + simpleName;
+        JClassSymbol symbol = loadClassInPackage("net.sourceforge.pmd.lang.java.symbols.recordclasses", simpleName, typeSystem);
+        assertTrue(symbol.isRecord(), "is a record");
+        return symbol;
+    }
+
+    private static @NotNull JClassSymbol loadClassInPackage(String x, String simpleName, TypeSystem typeSystem) {
+        String binaryName = x + "." + simpleName;
         JClassSymbol sym = typeSystem.getClassSymbol(binaryName);
         assertNotNull(sym, binaryName + " not found");
-        assertTrue(sym.isRecord(), "is a record");
         return sym;
     }
 }

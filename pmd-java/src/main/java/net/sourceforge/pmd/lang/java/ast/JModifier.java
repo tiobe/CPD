@@ -11,41 +11,42 @@ import java.util.Locale;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
 
+import net.sourceforge.pmd.lang.java.symbols.JClassSymbol;
 import net.sourceforge.pmd.lang.java.symbols.JMethodSymbol;
 
 /**
- * A Java modifier. The ordering of constants respects the ordering
- * recommended by the JLS.
+ * A Java modifier. The ordering of constants must respects the ordering recommended by the JLS:
+ * <ul>
+ * <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.1.1">Class modifiers</a></li>
+ * <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.3.1">Field modifiers</a></li>
+ * <li><a href="https://docs.oracle.com/javase/specs/jls/se25/html/jls-8.html#jls-8.4.3">Method modifiers</a></li>
+ * </ul>
  */
 // Note: the class is named JModifier and not Modifier to avoid conflict
 // with java.lang.reflect.Modifier
 public enum JModifier {
-    // for anything
     PUBLIC(Modifier.PUBLIC),
     PROTECTED(Modifier.PROTECTED),
     PRIVATE(Modifier.PRIVATE),
 
-    /** Modifier {@code "sealed"} (preview feature of JDK 15). */
-    SEALED(0),
-    /** Modifier {@code "non-sealed"} (preview feature of JDK 15). */
-    NON_SEALED("non-sealed", 0),
-
     ABSTRACT(Modifier.ABSTRACT),
+    DEFAULT(0),
     STATIC(Modifier.STATIC),
     FINAL(Modifier.FINAL),
 
-    // for methods
+    /** Modifier {@code "sealed"} (since Java 17). */
+    SEALED(0),
+    /** Modifier {@code "non-sealed"} (since Java 17). */
+    NON_SEALED("non-sealed", 0),
+
+    TRANSIENT(Modifier.TRANSIENT),
+    VOLATILE(Modifier.VOLATILE),
+
     SYNCHRONIZED(Modifier.SYNCHRONIZED),
     NATIVE(Modifier.NATIVE),
-    DEFAULT(0),
 
-    // not for fields
-    STRICTFP(Modifier.STRICT),
-
-    // for fields
-    TRANSIENT(Modifier.TRANSIENT),
-    VOLATILE(Modifier.VOLATILE);
-
+    STRICTFP(Modifier.STRICT);
+    /* IMPORTANT: when adding a constant, keep the order aligned with JLS (links in JavaDoc) */
 
     private final String token;
     private final int reflect;
@@ -69,7 +70,7 @@ public enum JModifier {
      * A default method is a non-static non-abstract public method declared
      * in an interface ({@link JMethodSymbol#isDefaultMethod()}.
      * <li>{@link #SEALED}: a sealed class has an attribute {@code PermittedSubclasses}
-     * with a non-zero length (in the compiled class file)
+     * with a non-zero length (in the compiled class file). ({@link JClassSymbol#isSealed()})
      * <li>{@link #NON_SEALED}: this doesn't exist at the class file level at all.
      * But a class must have the non-sealed modifier in source if it
      * is neither sealed, nor final, and appears in the {@code PermittedSubclasses}

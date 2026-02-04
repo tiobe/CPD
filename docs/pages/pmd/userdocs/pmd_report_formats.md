@@ -5,7 +5,7 @@ keywords: [formats, renderers]
 summary: "Overview of the built-in report formats for PMD"
 permalink: pmd_userdocs_report_formats.html
 author: Andreas Dangel <andreas.dangel@pmd-code.org>
-last_updated: September 2024 (7.6.0)
+last_updated: September 2025 (7.17.0)
 ---
 
 ## Overview
@@ -78,6 +78,9 @@ columns, use these CLI parameters additionally: `-property problem=false -proper
 *   file: Include file column. Default: true.
 *   priority: Include priority column. Default: true.
 *   line: Include line column. Default: true.
+*   endLine: Include end line column. Default: false. Since 7.17.0.
+*   beginColumn: Include begin column. Default: false. Since 7.17.0.
+*   endColumn: Include end column. Default: false. Since 7.17.0.
 *   desc: Include description column. Default: true.
 *   ruleSet: Include Rule set column. Default: true.
 *   rule: Include Rule column. Default: true.
@@ -119,7 +122,7 @@ normal source file extensions (e.g. ".java") with ".html", so that the generated
 
 IntelliJ IDEA integration.
 
-{% include warning.html content="This format can only be used as described in [Tools: IDEA](pmd_userdocs_tools.html#idea)." %}
+{% include warning.html content="This format can only be used as described in [Tools: IntelliJ IDEA External Tool](pmd_userdocs_tools_ide_plugins.html#intellij-idea-external-tool)." %}
 
 It has two ways of calling:
 

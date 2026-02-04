@@ -2,7 +2,7 @@
 <test-data
     xmlns="http://pmd.sourceforge.net/rule-tests"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://pmd.sourceforge.net/rule-tests http://pmd.sourceforge.net/rule-tests_1_0_0.xsd">
+    xsi:schemaLocation="http://pmd.sourceforge.net/rule-tests https://pmd.github.io/schema/rule-tests_1_1_0.xsd">
 
     <test-code>
         <description>connection is closed, ok</description>
@@ -442,6 +442,9 @@ public class Test {
             <message>Ensure that resources like this Connection object are closed after use</message>
             <message>Ensure that resources like this Statement object are closed after use</message>
         </expected-messages>
+        <expected-suppressions>
+            <suppressor line="12">@SuppressWarnings</suppressor>
+        </expected-suppressions>
         <code><![CDATA[
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -739,7 +742,7 @@ public class CloseResource {
         String someSql = "select something...";
         try {
             stmt = connection.createStatement();
-            resultSet = stmt.executQuery(someSql);
+            resultSet = stmt.executeQuery(someSql);
             while (resultSet.next()) {
                 // do something
             }
@@ -1258,6 +1261,34 @@ public class CloseResourceFP {
     </test-code>
 
     <test-code>
+        <description>#5042 [java] CloseResource false positive for pattern match</description>
+        <expected-problems>0</expected-problems>
+        <code><![CDATA[
+import java.io.*;
+
+public class CloseResourceFP {
+    public void check(AutoCloseable in) {
+        if (in instanceof FileInputStream fin) {
+            doCheck(fin);
+        } else if (in instanceof ByteArrayInputStream bin) {
+            doCheck(bin);
+        } else {
+            BufferedInputStream buf = new BufferedInputStream((InputStream) in);
+            doCheck(buf);
+        }
+    }
+    public void checkSwitch(AutoCloseable in) {
+        switch (in) {
+            case FileInputStream fin -> doCheck(fin);
+            case ByteArrayInputStream bin -> doCheck(bin);
+            default -> doCheck(new BufferedInputStream((InputStream) in));
+        }
+    }
+}
+        ]]></code>
+    </test-code>
+
+    <test-code>
         <description>#1967 [java] CloseResource false positive with late assignment of variable</description>
         <expected-problems>0</expected-problems>
         <code><![CDATA[
@@ -1317,6 +1348,27 @@ public class CloseResourceStream {
         ]]></code>
     </test-code>
 
+    <test-code>
+        <description>#2835 [java] CloseResource false positive with Stream and ternary</description>
+        <expected-problems>0</expected-problems>
+        <code><![CDATA[
+import java.util.stream.*;
+import java.util.*;
+
+public class Foo {
+    public List<String> getContainers() {
+        return null;
+    }
+
+    public void bar() {
+        Foo foo = new Foo();
+        final Stream<String> containers = foo.getContainers() != null ? foo.getContainers().stream() : Stream.empty();
+        System.out.println("count: " + containers.count());
+    }
+}
+]]></code>
+    </test-code>
+    
     <test-code>
         <description>#2402 [java] CloseResource possible false positive with primitive  Streams</description>
         <expected-problems>0</expected-problems>
@@ -2041,7 +2093,43 @@ public class CastedParameter {
     public void checkValidity(ClassLoader auxclassPathClassLoader) {
         if (auxclassPathClassLoader instanceof URLClassLoader) {
             final URLClassLoader urlClassLoader = (URLClassLoader) auxclassPathClassLoader;
-            // doesn't need to be closed, it's still a paramter…
+            // doesn't need to be closed, it's still a parameter…
+        }
+    }
+}
+        ]]></code>
+    </test-code>
+    <test-code>
+        <description>#5067: FileSystems.getDefault() can't be closed </description>
+        <expected-problems>0</expected-problems>
+        <code><![CDATA[
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+
+public class DefaultFileSystemUsage {
+    public void useDefaultFS() {
+        FileSystem defaultFS = FileSystems.getDefault();
+    }
+}
+        ]]></code>
+    </test-code>
+    <test-code>
+        <description>#5974: NPE with var in for-each loop</description>
+        <expected-problems>1</expected-problems>
+        <expected-linenumbers>6</expected-linenumbers>
+        <expected-messages>
+            <message>Ensure that resources like this FileInputStream object are closed after use</message>
+        </expected-messages>
+        <code><![CDATA[
+import java.io.FileInputStream;
+import java.util.List;
+
+public class Foo {
+    public void bar(List<FileInputStream> streams) {
+        for (final var stream: streams) {
+            try {
+                int c = stream.in();
+            } catch (IOException ignored) {}
         }
     }
 }

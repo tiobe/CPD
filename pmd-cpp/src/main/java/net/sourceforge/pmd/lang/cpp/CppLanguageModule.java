@@ -48,6 +48,8 @@ public class CppLanguageModule extends CpdOnlyLanguageModuleBase {
         bundle.definePropertyDescriptor(CpdLanguageProperties.CPD_IGNORE_LITERAL_SEQUENCES);
         bundle.definePropertyDescriptor(CpdLanguageProperties.CPD_IGNORE_LITERAL_AND_IDENTIFIER_SEQUENCES);
         bundle.definePropertyDescriptor(CpdLanguageProperties.CPD_IGNORE_SEQUENCE_INITIALIZATION);
+        bundle.definePropertyDescriptor(CpdLanguageProperties.CPD_ANONYMIZE_IDENTIFIERS);
+        bundle.definePropertyDescriptor(CpdLanguageProperties.CPD_ANONYMIZE_LITERALS);
         bundle.definePropertyDescriptor(CPD_SKIP_BLOCKS);
         return bundle;
     }

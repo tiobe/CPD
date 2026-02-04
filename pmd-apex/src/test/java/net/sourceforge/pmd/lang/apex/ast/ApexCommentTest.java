@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -63,6 +63,14 @@ class ApexCommentTest extends ApexParserTestBase {
     void classHasFormalComment() {
         ASTApexFile file = apex.parse(FORMAL_COMMENT_CONTENT + "\n"
                 + "class MyClass {}");
+        ASTFormalComment comment = file.descendants(ASTUserClass.class).children(ASTFormalComment.class).first();
+        assertEquals(FORMAL_COMMENT_CONTENT, comment.getImage());
+    }
+
+    @Test
+    void fileWithUnicodeEscapes() {
+        ASTApexFile file = apex.parse(FORMAL_COMMENT_CONTENT + "\n"
+                + "class MyClass { String s = 'Fran\\u00E7ois'; }");
         ASTFormalComment comment = file.descendants(ASTUserClass.class).children(ASTFormalComment.class).first();
         assertEquals(FORMAL_COMMENT_CONTENT, comment.getImage());
     }

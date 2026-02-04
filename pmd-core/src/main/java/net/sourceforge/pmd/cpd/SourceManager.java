@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -43,6 +43,10 @@ class SourceManager implements AutoCloseable {
         return textFiles;
     }
 
+    boolean isEmpty() {
+        return textFiles.isEmpty();
+    }
+
     private TextDocument load(TextFile file) {
         try {
             return TextDocument.create(file);
@@ -62,21 +66,21 @@ class SourceManager implements AutoCloseable {
         return textDocument;
     }
 
-    public int size() {
+    int size() {
         return files.size();
     }
 
 
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
         Exception exception = IOUtil.closeAll(textFiles);
         if (exception != null) {
-            throw exception;
+            throw new IOException(exception);
         }
     }
 
     @SuppressWarnings("PMD.CloseResource")
-    public Chars getSlice(Mark mark) {
+    Chars getSlice(Mark mark) {
         TextFile textFile = fileByPathId.get(mark.getToken().getFileId());
         assert textFile != null : "No such file " + mark.getToken().getFileId();
         TextDocument doc = get(textFile);
@@ -86,7 +90,7 @@ class SourceManager implements AutoCloseable {
         return doc.sliceOriginalText(lineRange);
     }
 
-    public String getFileDisplayName(FileId fileId) {
+    String getFileDisplayName(FileId fileId) {
         return fileNameRenderer.getDisplayName(fileId);
     }
 }

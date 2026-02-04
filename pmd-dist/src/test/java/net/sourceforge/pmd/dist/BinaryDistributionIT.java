@@ -29,11 +29,11 @@ import net.sourceforge.pmd.PMDVersion;
 class BinaryDistributionIT extends AbstractBinaryDistributionTest {
 
     private static final List<String> SUPPORTED_LANGUAGES_CPD = listOf(
-        "apex", "awl", "coco", "cpp", "cs", "dart", "ecmascript",
+        "apex", "awl", "coco", "cpp", "cs", "css", "dart", "ecmascript",
         "fortran", "gherkin", "go", "groovy", "html", "java", "jsp",
         "julia",
         "kotlin", "lua", "matlab", "modelica", "objectivec", "perl",
-        "php", "plsql", "pom", "powershell", "python", "ruby", "scala", "swift",
+        "php", "plsql", "pom", "powershell", "python", "ruby", "rust", "scala", "swift",
         "tsql", "typescript", "velocity", "visualforce", "wsdl", "xml", "xsl"
     );
 
@@ -52,8 +52,11 @@ class BinaryDistributionIT extends AbstractBinaryDistributionTest {
         "java-16", "java-17", "java-18", "java-19",
         "java-20",
         "java-21",
-        "java-22", "java-22-preview",
-        "java-23", "java-23-preview",
+        "java-22",
+        "java-23",
+        "java-24",
+        "java-25", "java-25-preview",
+        "java-26", "java-26-preview",
         "java-5", "java-6", "java-7",
         "java-8", "java-9", "jsp-2", "jsp-3", "kotlin-1.6",
         "kotlin-1.7", "kotlin-1.8", "modelica-3.4", "modelica-3.5",

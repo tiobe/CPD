@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 class ModelicaParserTest {
     @Test
-    void testParsingGrapgical() {
+    void testParsingGraphical() {
         ModelicaParsingHelper.DEFAULT.parseResource("ParserTestGraphical.mo");
     }
 

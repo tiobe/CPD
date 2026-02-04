@@ -4,7 +4,7 @@ short_title: Configuring rules
 keywords: [property, properties, message, priority]
 tags: [userdocs, getting_started]
 summary: "Learn how to configure your rules directly from the ruleset XML."
-last_updated: February 2024 (7.0.0)
+last_updated: September 2025 (7.18.0)
 permalink: pmd_userdocs_configuring_rules.html
 author: Hooper Bloob <hooperbloob@users.sourceforge.net>, Romain Pelisse <rpelisse@users.sourceforge.net>, Clément Fournier <clement.fournier76@gmail.com>
 ---
@@ -45,7 +45,7 @@ will cause the rule to be ignored.
 
 Properties make it easy to customise the behaviour of a rule directly from the xml. They come in several types,
 which correspond to the type of their values. For example, NPathComplexity declares a property "reportLevel",
-with an integer value type, and which corresponds to the threshold above which a method will be reported.
+with an integer value type, and which corresponds to the threshold at or above which a method will be reported.
 If you believe that its default value of 200 is too high, you could lower it to e.g. 150 in the following way:
 
 ```xml

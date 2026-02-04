@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -50,7 +50,7 @@ public enum DataType {
     Time(false, "Time"),
     Url(false),
     /**
-     * Indicates that Metatada was found, but it's type was not mappable. This could because it is a type which isn't
+     * Indicates that Metadata was found, but its type was not mappable. This could because it is a type which isn't
      * mapped, or it was an edge case where the type was ambiguously defined in the Metadata.
      */
     Unknown(true);
@@ -119,15 +119,8 @@ public enum DataType {
         return dataType;
     }
 
-    DataType(boolean requiresEscaping) {
-        this(requiresEscaping, null);
-    }
-
     DataType(boolean requiresEscaping, String... basicTypeNames) {
         this.requiresEscaping = requiresEscaping;
-        this.basicTypeNames = new HashSet<>();
-        if (basicTypeNames != null) {
-            this.basicTypeNames.addAll(Arrays.asList(basicTypeNames));
-        }
+        this.basicTypeNames = new HashSet<>(Arrays.asList(basicTypeNames));
     }
 }

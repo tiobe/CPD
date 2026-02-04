@@ -65,13 +65,20 @@ final class TypeAnnotationHelper {
             pathAndAnnot.add(Triple.of(reference, path, annot));
         }
 
-        /** Return true if the parameter returns true on any parameter. */
-        boolean forEach(TypeAnnotationConsumer consumer) {
-            boolean result = false;
+        /** Execute a callback on each annotations in this set. */
+        void forEach(TypeAnnotationConsumer consumer) {
             for (Triple<TypeReference, TypePath, SymAnnot> triple : pathAndAnnot) {
-                result |= consumer.acceptAnnotation(triple.getLeft(), triple.getMiddle(), triple.getRight());
+                consumer.acceptAnnotation(triple.getLeft(), triple.getMiddle(), triple.getRight());
             }
-            return result;
+        }
+
+        /** Accumulate a value while applying type annotations. */
+        <T> T reduce(final T init, TypeAnnotationReducer<T> consumer) {
+            T acc = init;
+            for (Triple<TypeReference, TypePath, SymAnnot> triple : pathAndAnnot) {
+                acc = consumer.acceptAnnotation(triple.getLeft(), triple.getMiddle(), triple.getRight(), acc);
+            }
+            return acc;
         }
 
         @Override
@@ -84,6 +91,13 @@ final class TypeAnnotationHelper {
 
             /** Add an annotation at the given path and type ref. */
             boolean acceptAnnotation(TypeReference tyRef, @Nullable TypePath path, SymAnnot annot);
+        }
+
+        @FunctionalInterface
+        interface TypeAnnotationReducer<T> {
+
+            /** Add an annotation at the given path and type ref. */
+            T acceptAnnotation(TypeReference tyRef, @Nullable TypePath path, SymAnnot annot, T acc);
         }
     }
 
@@ -135,7 +149,7 @@ final class TypeAnnotationHelper {
                 JTypeMirror newBound = resolvePathStep(wild.getBound(), path, i + 1, annot);
                 return wild.getTypeSystem().wildcard(wild.isUpperBound(), newBound).withAnnotations(wild.getTypeAnnotations());
             }
-            throw new IllegalArgumentException("Expected wilcard type: " + t);
+            throw new IllegalArgumentException("Expected wildcard type: " + t);
         default:
             throw new IllegalArgumentException("Illegal path step for annotation TypePath" + i);
         }

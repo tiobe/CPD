@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -13,7 +13,7 @@ import java.io.Writer;
  *
  * <p>This renderer is available as "xmlold".
  *
- * @deprecated Update your tools to use the standard XML renderer "xml" again.
+ * @deprecated Since 7.3.0. Update your tools to use the standard XML renderer "xml" again.
  */
 @Deprecated
 public class XMLOldRenderer implements CPDReportRenderer {

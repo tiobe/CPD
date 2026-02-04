@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -49,8 +49,7 @@ public final class ASTCatchParameter extends AbstractJavaNode
     }
 
     @Override
-    @NonNull
-    public ASTVariableId getVarId() {
+    public @NonNull ASTVariableId getVarId() {
         return (ASTVariableId) getLastChild();
     }
 

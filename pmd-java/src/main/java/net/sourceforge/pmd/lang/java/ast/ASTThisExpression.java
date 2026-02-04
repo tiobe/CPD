@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -24,8 +24,7 @@ public final class ASTThisExpression extends AbstractJavaExpr implements ASTPrim
     }
 
 
-    @Nullable
-    public ASTClassType getQualifier() {
+    public @Nullable ASTClassType getQualifier() {
         return getNumChildren() > 0 ? (ASTClassType) getChild(0) : null;
     }
 

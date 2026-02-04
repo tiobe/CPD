@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -30,7 +30,7 @@ public class SwitchDensityRule extends AbstractJavaRulechainRule {
 
     private static final PropertyDescriptor<Integer> REPORT_LEVEL =
             CommonPropertyDescriptors.reportLevelProperty()
-                    .desc("Threshold above which a switch statement or expression is reported")
+                    .desc("Threshold at or above which a switch statement or expression is reported")
                     .require(positive())
                     .defaultValue(10)
                     .build();
@@ -55,7 +55,7 @@ public class SwitchDensityRule extends AbstractJavaRulechainRule {
         int stmtCount = node.descendants(ASTStatement.class).count();
         int labelCount = node.getBranches()
                 .map(ASTSwitchBranch::getLabel)
-                .sumBy(label -> label.isDefault() ? 1 : label.getExprList().count());
+                .sumBy(label -> label.isDefault() || label.isPatternLabel() ? 1 : label.getExprList().count());
 
         // note: if labelCount is zero, double division will produce +Infinity or NaN, not ArithmeticException
         double density = stmtCount / (double) labelCount;

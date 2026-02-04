@@ -7,6 +7,7 @@ package net.sourceforge.pmd.properties.internal;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -27,15 +28,25 @@ import net.sourceforge.pmd.util.internal.xml.XmlUtil;
  */
 public final class PropertyParsingUtil {
 
+    /**
+     * Marker used for rule properties, that are deprecated. If the description of a property
+     * starts exactly with that string, then are warning is issued when the ruleset is loaded
+     * and the property is used and the rule documentation displays a deprecated label.
+     * @since 7.21.0
+     */
+    public static final String DEPRECATED_RULE_PROPERTY_MARKER = "deprecated!";
+
     public static final ValueSyntax<String> STRING = ValueSyntax.withDefaultToString(String::trim);
     public static final ValueSyntax<Character> CHARACTER =
         ValueSyntax.partialFunction(
             c -> Character.toString(c),
             s -> s.charAt(0),
+            s -> false,
             PropertyConstraint.fromPredicate(
                 s -> s.length() == 1,
                 "Should be exactly one character in length"
-            ));
+            ),
+            Collections.emptySet());
 
     public static final ValueSyntax<Pattern> REGEX = ValueSyntax.withDefaultToString(Pattern::compile);
     public static final ValueSyntax<Integer> INTEGER = ValueSyntax.withDefaultToString(preTrim(Integer::valueOf));
@@ -76,7 +87,10 @@ public final class PropertyParsingUtil {
                     return Optional.empty();
                 }
                 return Optional.of(itemSyntax.fromString(str));
-            }
+            },
+            itemSyntax::isFromStringDeprecated,
+            itemSyntax.isCollection(),
+            itemSyntax.enumeratedValues()
         );
     }
 
@@ -128,7 +142,11 @@ public final class PropertyParsingUtil {
         String delim = "" + PropertyFactory.DEFAULT_DELIMITER;
         return ValueSyntax.create(
             coll -> IteratorUtil.toStream(coll.iterator()).map(itemSyntax::toString).collect(Collectors.joining(delim)),
-            string -> parseListWithEscapes(string, PropertyFactory.DEFAULT_DELIMITER, itemSyntax::fromString).stream().collect(collector)
+            string -> parseListWithEscapes(string, PropertyFactory.DEFAULT_DELIMITER, itemSyntax::fromString).stream().collect(collector),
+            string -> parseListWithEscapes(string, PropertyFactory.DEFAULT_DELIMITER, s -> s).stream()
+                    .anyMatch(itemSyntax::isFromStringDeprecated),
+            true,
+            itemSyntax.enumeratedValues()
         );
     }
 
@@ -148,6 +166,15 @@ public final class PropertyParsingUtil {
      * "a\"   -> [ "a\"  ]   (a backslash at the end of the string is just a backslash)
      *
      * }</pre>
+     *
+     * The list may end with a separator. Any whitespace around tokens is ignored:
+     *
+     * <pre>{@code
+     * " a , c " -> [ "a", "c" ]
+     * " a , c , " -> [ "a", "c" ]
+     * }</pre>
+     *
+     *
      */
     public static <U> List<U> parseListWithEscapes(String str, char delimiter, Function<? super String, ? extends U> extractor) {
         if (str.isEmpty()) {
@@ -165,7 +192,7 @@ public final class PropertyParsingUtil {
                 inEscapeMode = false;
                 currentToken.append(c);
             } else if (c == delimiter) {
-                result.add(extractor.apply(currentToken.toString()));
+                result.add(extractor.apply(currentToken.toString().trim()));
                 currentToken = new StringBuilder();
             } else if (c == ESCAPE_CHAR && i < str.length() - 1) {
                 // this is ordered this way so that if the delimiter is
@@ -176,14 +203,15 @@ public final class PropertyParsingUtil {
             }
         }
 
-        if (currentToken.length() > 0) {
-            result.add(extractor.apply(currentToken.toString()));
+        String currentTokenString = currentToken.toString().trim();
+        if (!currentTokenString.isEmpty()) {
+            result.add(extractor.apply(currentTokenString));
         }
         return result;
     }
 
 
-    public static <T> ValueSyntax<T> enumerationParser(final Map<String, T> mappings, Function<? super T, String> reverseFun) {
+    public static <T> ValueSyntax<T> enumerationParser(final Map<String, T> mappings, final Map<String, T> deprecatedMappings, Function<? super T, String> reverseFun) {
 
         if (mappings.containsValue(null)) {
             throw new IllegalArgumentException("Map may not contain entries with null values");
@@ -191,11 +219,13 @@ public final class PropertyParsingUtil {
 
         return ValueSyntax.partialFunction(
             reverseFun,
-            mappings::get,
+            s -> mappings.getOrDefault(s, deprecatedMappings.get(s)),
+            deprecatedMappings::containsKey,
             PropertyConstraint.fromPredicate(
-                mappings::containsKey,
+                s -> mappings.containsKey(s) || deprecatedMappings.containsKey(s),
                 "Should be " + XmlUtil.formatPossibleNames(XmlUtil.toConstants(mappings.keySet()))
-            )
+            ),
+            new HashSet<>(mappings.values())
         );
     }
 }
