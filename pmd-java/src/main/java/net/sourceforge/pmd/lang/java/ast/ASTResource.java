@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -63,8 +63,7 @@ public final class ASTResource extends AbstractJavaNode {
         }
     }
 
-    @Nullable
-    public ASTLocalVariableDeclaration asLocalVariableDeclaration() {
+    public @Nullable ASTLocalVariableDeclaration asLocalVariableDeclaration() {
         return AstImplUtil.getChildAs(this, 0, ASTLocalVariableDeclaration.class);
     }
 

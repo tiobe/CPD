@@ -27,14 +27,21 @@ import net.sourceforge.pmd.lang.java.ast.ASTConditionalExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTInfixExpression;
 import net.sourceforge.pmd.lang.java.ast.ASTLambdaExpression;
+import net.sourceforge.pmd.lang.java.ast.ASTMethodCall;
 import net.sourceforge.pmd.lang.java.ast.ASTMethodReference;
+import net.sourceforge.pmd.lang.java.ast.ASTReturnStatement;
 import net.sourceforge.pmd.lang.java.ast.BinaryOp;
+import net.sourceforge.pmd.lang.java.ast.JavaNode;
 import net.sourceforge.pmd.lang.java.ast.internal.JavaAstUtils;
 import net.sourceforge.pmd.lang.java.ast.internal.PrettyPrintingUtil;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRulechainRule;
+import net.sourceforge.pmd.lang.java.types.JMethodSig;
 import net.sourceforge.pmd.lang.java.types.JTypeMirror;
+import net.sourceforge.pmd.lang.java.types.JTypeVar;
+import net.sourceforge.pmd.lang.java.types.Substitution;
 import net.sourceforge.pmd.lang.java.types.TypeConversion;
 import net.sourceforge.pmd.lang.java.types.TypeOps;
+import net.sourceforge.pmd.lang.java.types.TypeOps.Convertibility;
 import net.sourceforge.pmd.lang.java.types.TypeTestUtil;
 import net.sourceforge.pmd.lang.java.types.ast.ExprContext;
 import net.sourceforge.pmd.lang.java.types.ast.ExprContext.ExprContextKind;
@@ -94,24 +101,64 @@ public class UnnecessaryCastRule extends AbstractJavaRulechainRule {
             // the object will not implement SubItf anymore.
         } else if (isCastUnnecessary(castExpr, context, coercionType, operandType)) {
             reportCast(castExpr, data);
+        } else if (castExpr.getParent() instanceof ASTMethodCall
+                    && castExpr.getIndexInParent() == 0) {
+            JMethodSig methodType = ((ASTMethodCall) castExpr.getParent()).getMethodType();
+            handleMethodCall(castExpr, methodType, operandType, data);
         }
         return null;
     }
 
+    private void handleMethodCall(ASTCastExpression castExpr, JMethodSig methodType,
+            JTypeMirror operandType, Object data) {
+        boolean generic = methodType.getSymbol().getFormalParameters().stream()
+            .anyMatch(fp -> isTypeExpression(fp.getTypeMirror(Substitution.EMPTY)));
+        if (!generic) {
+            JTypeMirror declaringType = methodType.getDeclaringType();
+            if (!isTypeExpression(methodType.getSymbol().getReturnType(Substitution.EMPTY))) {
+                // declaring type of List<T>::size is List<T>, but since the return type
+                // is not generic, it's enough to check that operand is a List
+                declaringType = declaringType.getErasure();
+            }
+            if (TypeTestUtil.isA(declaringType, operandType)) {
+                reportCast(castExpr, data);
+            }
+        }
+    }
+
+    private boolean isTypeExpression(JTypeMirror type) {
+        return type.isGeneric() || type instanceof JTypeVar;
+    }
+
     private boolean isCastUnnecessary(ASTCastExpression castExpr, @NonNull ExprContext context, JTypeMirror coercionType, JTypeMirror operandType) {
         if (operandType.equals(coercionType)) {
-            // with the exception of the lambda thing above, casts to
-            // the same type are always unnecessary
             return true;
         } else if (context.isMissing()) {
             // then we have fewer violation conditions
 
             return !operandType.isBottom() // casts on a null literal are necessary
-                && operandType.isSubtypeOf(coercionType);
+                   && operandType.isSubtypeOf(coercionType)
+                   && !isCastToRawType(coercionType, operandType)
+                   // If the context is missing when the parent is a lambda,
+                   // that means the body of the lambda is determining the return
+                   // type of the lambda
+                   && getLambdaParent(castExpr) == null;
         }
 
         return !isCastDeterminingContext(castExpr, context, coercionType, operandType)
             && castIsUnnecessaryToMatchContext(context, coercionType, operandType);
+    }
+
+    /**
+     * Whether this cast is casting a non-raw type to a raw type.
+     * This is part of the {@link Convertibility#bySubtyping()} relation,
+     * and needs to be singled out as operations on the raw type
+     * behave differently than on the non-raw type. In that case the
+     * cast may be necessary to avoid compile-errors, even though it
+     * will be noop at runtime (an _unchecked_ cast).
+     */
+    private boolean isCastToRawType(JTypeMirror coercionType, JTypeMirror operandType) {
+        return coercionType.isRaw() && !operandType.isRaw();
     }
 
     private void reportCast(ASTCastExpression castExpr, Object data) {
@@ -178,13 +225,27 @@ public class UnnecessaryCastRule extends AbstractJavaRulechainRule {
                 // Eg in
                 //     int i; ((double) i) * i
                 // the only reason the mult expr has type double is because of the cast
-                return TypeOps.isStrictSubtype(otherType, coercionType)
-                    // but not for integers strictly smaller than int
-                    && !TypeOps.isStrictSubtype(otherType.unbox(), otherType.getTypeSystem().INT);
+                JTypeMirror promotedTypeWithoutCast = TypeConversion.binaryNumericPromotion(operandType, otherType);
+                JTypeMirror promotedTypeWithCast = TypeConversion.binaryNumericPromotion(coercionType, otherType);
+                return !promotedTypeWithoutCast.equals(promotedTypeWithCast);
             }
 
         }
         return false;
+    }
+
+    private static @Nullable ASTLambdaExpression getLambdaParent(ASTCastExpression castExpr) {
+        if (castExpr.getParent() instanceof ASTLambdaExpression) {
+            return (ASTLambdaExpression) castExpr.getParent();
+        }
+        if (castExpr.getParent() instanceof ASTReturnStatement) {
+            JavaNode returnTarget = JavaAstUtils.getReturnTarget((ASTReturnStatement) castExpr.getParent());
+
+            if (returnTarget instanceof ASTLambdaExpression) {
+                return (ASTLambdaExpression) returnTarget;
+            }
+        }
+        return null;
     }
 
 }

@@ -10,7 +10,10 @@ import net.sourceforge.pmd.lang.plsql.ast.ExecutableCode;
  * Non-commented source statement counter for methods.
  *
  * <p>Analogous to and cribbed from Java version of the rule.</p>
+ *
+ * @deprecated Since 7.19.0. Use the rule {@link NcssCountRule} instead.
  */
+@Deprecated
 public class NcssMethodCountRule extends AbstractNcssCountRule<ExecutableCode> {
 
     /**
@@ -26,9 +29,17 @@ public class NcssMethodCountRule extends AbstractNcssCountRule<ExecutableCode> {
     }
 
     @Override
-    protected Object[] getViolationParameters(ExecutableCode node, int metric) {
+    protected Object[] getViolationParameters(ExecutableCode node, int metric, int limit) {
         String name = node.getMethodName();
-        return new Object[] {name == null ? "(unnamed)" : name, metric};
+        return new Object[] {name == null ? "(unnamed)" : name, metric, limit};
+    }
+
+    /**
+     * @deprecated Since 7.18.0. Use {@link #getViolationParameters(ExecutableCode, int, int)} instead.
+     */
+    @Deprecated
+    protected Object[] getViolationParameters(ExecutableCode node, int metric) {
+        return getViolationParameters(node, metric, -1);
     }
 
 

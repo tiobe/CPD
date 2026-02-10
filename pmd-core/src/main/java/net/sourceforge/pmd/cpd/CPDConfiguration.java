@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -43,6 +43,7 @@ public class CPDConfiguration extends AbstractConfiguration {
         RENDERERS.put("csv", CSVRenderer.class);
         RENDERERS.put("csv_with_linecount_per_file", CSVWithLinecountPerFileRenderer.class);
         RENDERERS.put("vs", VSRenderer.class);
+        RENDERERS.put("markdown", MarkdownRenderer.class);
     }
 
 
@@ -64,6 +65,9 @@ public class CPDConfiguration extends AbstractConfiguration {
 
     private CPDSequenceIgnoreSetting ignoreSequences = new CPDSequenceIgnoreSetting();
 
+    /**
+     * @deprecated Since 7.3.0.
+     */
     @Deprecated
     // Note: The default value was false until up to 7.3.0 and is true since 7.4.0
     private boolean skipLexicalErrors = true;
@@ -240,7 +244,7 @@ public class CPDConfiguration extends AbstractConfiguration {
     }
 
     /**
-     * @deprecated This option will be removed. With {@link #isFailOnError()}, you can
+     * @deprecated Since 7.3.0. This option will be removed. With {@link #isFailOnError()}, you can
      * control whether lexical errors should fail the build or not.
      */
     @Deprecated
@@ -249,7 +253,7 @@ public class CPDConfiguration extends AbstractConfiguration {
     }
 
     /**
-     * @deprecated This option will be removed. With {@link #setFailOnError(boolean)}, you can
+     * @deprecated Since 7.3.0. This option will be removed. With {@link #setFailOnError(boolean)}, you can
      * control whether lexical errors should fail the build or not.
      */
     @Deprecated

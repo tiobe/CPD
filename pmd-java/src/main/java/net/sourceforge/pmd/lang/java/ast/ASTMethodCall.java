@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -54,15 +54,13 @@ public final class ASTMethodCall extends AbstractInvocationExpr implements Quali
     }
 
     @Override
-    @NonNull
-    public ASTArgumentList getArguments() {
+    public @NonNull ASTArgumentList getArguments() {
         return (ASTArgumentList) getChild(getNumChildren() - 1);
     }
 
 
     @Override
-    @Nullable
-    public ASTTypeArguments getExplicitTypeArguments() {
+    public @Nullable ASTTypeArguments getExplicitTypeArguments() {
         return firstChild(ASTTypeArguments.class);
     }
 

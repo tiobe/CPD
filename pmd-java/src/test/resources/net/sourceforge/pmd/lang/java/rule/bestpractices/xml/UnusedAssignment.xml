@@ -2,7 +2,7 @@
 <test-data
     xmlns="http://pmd.sourceforge.net/rule-tests"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://pmd.sourceforge.net/rule-tests http://pmd.sourceforge.net/rule-tests_1_0_0.xsd">
+    xsi:schemaLocation="http://pmd.sourceforge.net/rule-tests https://pmd.github.io/schema/rule-tests_1_1_0.xsd">
 
     <test-code>
         <description>NPE on nested record decl #3224</description>
@@ -1198,22 +1198,23 @@ public class Foo {
     </test-code>
 
     <test-code>
-        <description>Definitions in try block reach catch blocks through method calls</description>
+        <description>Definitions in try block reach catch blocks through method calls (#3975)</description>
         <expected-problems>1</expected-problems>
         <expected-linenumbers>4</expected-linenumbers>
+<!--        <expected-linenumbers>4,7</expected-linenumbers>-->
         <expected-messages>
             <message>The initializer for variable 'halfway' is never used (overwritten on line 7)</message>
-            <!-- This was disabled because it causes FPs in LocalVariableCouldBeFinal. -->
+            <!-- Violation on line 7 was disabled because it causes FPs in LocalVariableCouldBeFinal. - see PR #5191 -->
             <!-- <message>The value assigned to variable 'halfway' is never used</message>-->
         </expected-messages>
         <code><![CDATA[
 public class Foo {
 
     void method() {
-        boolean halfway = false;
+        boolean halfway = false; // (line 4)
 
         try {
-            halfway = true; // this may not fail so the catch block is unreachable
+            halfway = true; // this may not fail so the catch block is unreachable (line 7)
         } catch(Exception e) {
             System.out.println(halfway);
         }
@@ -1225,7 +1226,7 @@ public class Foo {
     </test-code>
 
     <test-code>
-        <description>Definitions in try block reach catch blocks through method calls 2</description>
+        <description>Definitions in try block reach catch blocks through method calls 2 (#3975)</description>
         <expected-problems>1</expected-problems>
         <expected-linenumbers>4</expected-linenumbers>
         <expected-messages>
@@ -1251,8 +1252,8 @@ public class Foo {
 ]]></code>
     </test-code>
     <test-code>
-        <description>Definitions in try block reach catch blocks through method calls 3</description>
-        <!-- This was disabled because it causes FPs in LocalVariableCouldBeFinal. -->
+        <description>Definitions in try block reach catch blocks through method calls 3 (#3975)</description>
+        <!-- This was disabled because it causes FPs in LocalVariableCouldBeFinal. - see PR #5191 -->
         <expected-problems>0</expected-problems>
 <!--        <expected-problems>1</expected-problems>-->
 <!--        <expected-linenumbers>8</expected-linenumbers>-->
@@ -3118,6 +3119,9 @@ class Foo {
         <description>Test annot suppression</description>
         <rule-property name="reportUnusedVariables">true</rule-property>
         <expected-problems>0</expected-problems>
+        <expected-suppressions>
+            <suppressor line="2">@SuppressWarnings</suppressor>
+        </expected-suppressions>
         <code><![CDATA[
             class Foo {
                 int method(@SuppressWarnings("unused") int param) {
@@ -3929,5 +3933,91 @@ public class Main {
     }
 }
 ]]></code>
+    </test-code>
+
+    <test-code>
+        <description>[java] UnusedAssignment false-positive with try-with-resources #4127</description>
+        <expected-problems>0</expected-problems>
+        <code><![CDATA[
+import java.util.function.Function;
+
+class Lock implements Autocloseable {
+    public close() { }
+
+    private static Function<Integer, Lock> locks;
+    public static void foo() {
+        Lock lock;
+        synchronized (locks) {
+            lock = locks.get(0);
+        }
+        try (lock) {
+            // ...
+        }
+    }
+}
+]]></code>
+    </test-code>
+    <test-code>
+        <description>[java] UnusedAssignment false-positive with continue in foreach #5504</description>
+        <expected-problems>0</expected-problems>
+        <code><![CDATA[
+import java.nio.file.Files;
+
+class Lock {
+
+    public static void foo() {
+        List<String> lines = Files.readAllLines("someFile");
+        int lineNumber = 0;
+        boolean expectingAnotherLine = false;
+        for (String line : lines)
+        {
+            ++lineNumber;
+            if (line.endsWith("\\"))
+            {
+                expectingAnotherLine = true; // line 9 - false positive unused assignment
+                continue;
+            }
+            expectingAnotherLine = false;
+        }
+        if (expectingAnotherLine)
+            throw new IllegalArgumentException("Unexpected end of line: " + command);
+
+    }
+}
+]]></code>
+    </test-code>
+
+    <test-code>
+        <description>[java] UnusedAssignment false positive in record compact constructor when using ternary #5592</description>
+        <expected-problems>0</expected-problems>
+        <code><![CDATA[
+            import java.util.Set;
+            import java.util.Collections;
+            import java.util.TreeSet;
+            record TestRecord(Set<Integer> foo) {
+                TestRecord {
+                    foo = foo == null ? Collections.emptySet() : new TreeSet<>(foo); // <!--- violation here
+                }
+            }
+            ]]></code>
+    </test-code>
+
+    <test-code>
+        <description>Compact record ctor 2</description>
+        <expected-problems>1</expected-problems>
+        <expected-linenumbers>4</expected-linenumbers>
+        <expected-messages>
+            <message>The initial value of variable 'foo' is never used (overwritten on line 6)</message>
+        </expected-messages>
+        <code><![CDATA[
+            import java.util.Set;
+            import java.util.Collections;
+            import java.util.TreeSet;
+            record TestRecord(Set<Integer> foo) { // initial value unused
+                TestRecord {
+                    foo = Collections.emptySet();
+                }
+            }
+            ]]></code>
     </test-code>
 </test-data>

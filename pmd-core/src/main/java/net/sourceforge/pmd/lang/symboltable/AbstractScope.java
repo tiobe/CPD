@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -14,7 +14,10 @@ import java.util.Set;
 
 /**
  * Base class for any {@link Scope}. Provides useful default implementations.
+ *
+ * @deprecated Since 7.19.0. For more info, see {@link net.sourceforge.pmd.lang.symboltable}.
  */
+@Deprecated
 public abstract class AbstractScope implements Scope {
 
     private Scope parent;

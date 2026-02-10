@@ -3,11 +3,21 @@ title: Adding PMD support for a new ANTLR grammar based language
 short_title: Adding a new language with ANTLR
 tags: [devdocs, extending]
 summary: "How to add a new language to PMD using ANTLR grammar."
-last_updated: December 2023 (7.0.0)
+last_updated: April 2025 (7.13.0)
 sidebar: pmd_sidebar
 permalink: pmd_devdocs_major_adding_new_language_antlr.html
 folder: pmd/devdocs
 ---
+
+{% include callout.html type="info" content="
+
+**Do you really need a new language?**<br><br>
+
+This document describes how to add a new full-fledged language, with it's own grammar and parser.
+If what you are trying to support is “a specific type” of files for a grammar that already exists
+(ie: a specific type of XML or HTML file) you may want to consider [creating a **dialect**](pmd_devdocs_major_adding_dialect.html) instead.
+
+" %}
 
 {% include callout.html type="warning" content="
 
@@ -110,6 +120,8 @@ definitely don't come for free. It is much effort and requires perseverance to i
 
 ### 4.  Generate your parser (using ANTLR)
 *   Make sure, you have the property `<antlr4.visitor>true</antlr4.visitor>` in your `pom.xml` file.
+*   Include the antlr and antrun plugins to the module `pom.xml`. Antlr needs to be first, to ensure it runs first.
+    The antrun plugin should execute the `pmd-language` target using the `${antlr4.ant.wrapper}` antfile.
 *   This is just a matter of building the language module. ANTLR is called via ant, and this step is added
     to the phase `generate-sources`. So you can just call e.g. `./mvnw generate-sources -pl pmd-swift` to
     have the parser generated.
@@ -126,7 +138,7 @@ definitely don't come for free. It is much effort and requires perseverance to i
     you can create your own implementation of
     [`AntlrTokenFilter`](https://github.com/pmd/pmd/blob/main/pmd-core/src/main/java/net/sourceforge/pmd/cpd/impl/AntlrTokenFilter.java).
     You'll need to override then the protected method `getTokenFilter(AntlrTokenManager)`
-    and return your custom filter. See the CpdLexer for C# as an exmaple:
+    and return your custom filter. See the CpdLexer for C# as an example:
     [`CsCpdLexer`](https://github.com/pmd/pmd/blob/main/pmd-cs/src/main/java/net/sourceforge/pmd/lang/cs/cpd/CsCpdLexer.java).
     
     If you don't need a custom token filter, you don't need to override the method. It returns the default
@@ -163,6 +175,7 @@ definitely don't come for free. It is much effort and requires perseverance to i
 ### 9. Make PMD recognize your language
 * Create your own subclass of `net.sourceforge.pmd.lang.impl.SimpleLanguageModuleBase`, see Swift as an example:
     [`SwiftLanguageModule`](https://github.com/pmd/pmd/blob/main/pmd-swift/src/main/java/net/sourceforge/pmd/lang/swift/SwiftLanguageModule.java).
+*   Ensure the language name and language id used, match those set as properties when running `ant` in step #4. 
 *   Add for each version of your language a call to `addVersion` in your language module’s constructor.
     Use `addDefaultVersion` for defining the default version.
 *   You’ll need to refer the language version handler created in step #7.

@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -195,6 +195,30 @@ class ParserCornersTest extends BaseJavaTreeDumpTest {
         java7.parse(code);
     }
 
+    /**
+     * @see <a href="https://github.com/pmd/pmd/issues/6364">[java] Parse error with yield lambda inside switch #6364</a>
+     */
+    @Test
+    void testYieldStmtWithLambda() {
+        java15.parse(
+            "public class Lambda {\n"
+            + "    interface Func {\n"
+            + "        String apply(Lambda a, Lambda b);\n"
+            + "    }\n"
+            + "\n"
+            + "   public static void main( String[] args ) {\n"
+            + "      foo(switch ( args[0] ) {\n"
+            + "         default:\n"
+            + "            yield (Lambda a, Lambda b) -> \"hello\";\n"
+            + "      });\n"
+            + "   }\n"
+            + "\n"
+            + "   private static void foo(Func f)  {}        \n"
+            + "}"
+        );
+    }
+
+
     @Test
     void testUnicodeIndent() {
         // https://github.com/pmd/pmd/issues/3423
@@ -292,7 +316,7 @@ class ParserCornersTest extends BaseJavaTreeDumpTest {
     }
 
     @Test
-    void stringConcatentationShouldNotBeCast() {
+    void stringConcatenationShouldNotBeCast() {
         // https://github.com/pmd/pmd/issues/1484
         String code = "public class Test {\n" + "    public static void main(String[] args) {\n"
             + "        System.out.println(\"X\" + (args) + \"Y\");\n" + "    }\n" + "}";
@@ -366,5 +390,15 @@ class ParserCornersTest extends BaseJavaTreeDumpTest {
     @Test
     void testGithubBug4947() {
         java15.parseResource("testdata/Issue4947TextBlock.java");
+    }
+
+    @Test
+    void testGithubBug6014() {
+        java.parse("//");
+    }
+
+    @Test
+    void testGitHubBug6234() {
+        doTest("GitHubBug6234", java);
     }
 }

@@ -19,10 +19,31 @@ public final class AssertionUtil {
     private static final Pattern BINARY_NAME_PATTERN = Pattern.compile("[\\w$]+(?:\\.[\\w$]+)*(?:\\[])*");
     private static final Pattern BINARY_NAME_NO_ARRAY = Pattern.compile("[\\w$]++(?:\\.[\\w$]++)*");
 
+    private static final boolean ASSERT_ENABLED;
+
+    private static boolean areAssertsEnabled() {
+        try {
+            assert false;
+            return false;
+        } catch (AssertionError e) {
+            return true;
+        }
+    }
+
+    static {
+        ASSERT_ENABLED = areAssertsEnabled();
+    }
+
     private AssertionUtil() {
         // utility class
     }
 
+    /**
+     * Return true if the VM runs with assertions enabled.
+     */
+    public static boolean isAssertEnabled() {
+        return ASSERT_ENABLED;
+    }
 
     /** @throws NullPointerException if any item is null */
     public static void requireContainsNoNullValue(String name, Collection<?> c) {
@@ -203,8 +224,7 @@ public final class AssertionUtil {
         return exceptionMaker.apply(String.format("%s must be %s, got %s", name, condition, value));
     }
 
-    @NonNull
-    public static <T> T requireParamNotNull(String paramName, T obj) {
+    public static <T> @NonNull T requireParamNotNull(String paramName, T obj) {
         if (obj == null) {
             throw new NullPointerException("Parameter " + paramName + " is null");
         }

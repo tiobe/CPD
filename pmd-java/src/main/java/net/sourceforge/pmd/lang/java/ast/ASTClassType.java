@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -112,16 +112,14 @@ public final class ASTClassType extends AbstractJavaTypeNode implements ASTRefer
      *
      * @return A type, or null if this is a base type
      */
-    @Nullable
-    public ASTClassType getQualifier() {
+    public @Nullable ASTClassType getQualifier() {
         return firstChild(ASTClassType.class);
     }
 
     /**
      * Returns the type arguments of this segment if some are specified.
      */
-    @Nullable
-    public ASTTypeArguments getTypeArguments() {
+    public @Nullable ASTTypeArguments getTypeArguments() {
         return firstChild(ASTTypeArguments.class);
     }
 

@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -19,7 +19,7 @@ import net.sourceforge.pmd.lang.modelica.resolver.internal.Watchdog;
  * <p><b>None of this is published API, and compatibility can be broken anytime!</b>
  * Use this only at your own risk.
  *
- * @apiNote Internal API
+ * @internalApi None of this is published API, and compatibility can be broken anytime! Use this only at your own risk.
  */
 @InternalApi
 public final class InternalApiBridge {

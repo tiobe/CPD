@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -48,8 +48,7 @@ public final class ASTFormalParameters extends ASTList<ASTFormalParameter> {
      * Returns the receiver parameter if it is present, otherwise returns
      * null.
      */
-    @Nullable
-    public ASTReceiverParameter getReceiverParameter() {
+    public @Nullable ASTReceiverParameter getReceiverParameter() {
         return AstImplUtil.getChildAs(this, 0, ASTReceiverParameter.class);
     }
 }

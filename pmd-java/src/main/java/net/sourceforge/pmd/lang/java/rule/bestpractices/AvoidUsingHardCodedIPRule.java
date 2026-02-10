@@ -8,6 +8,7 @@ import static java.util.Arrays.asList;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,25 +20,25 @@ import net.sourceforge.pmd.lang.java.rule.AbstractJavaRulechainRule;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
 import net.sourceforge.pmd.properties.PropertyFactory;
 import net.sourceforge.pmd.reporting.RuleContext;
+import net.sourceforge.pmd.util.CollectionUtil;
 
 
 public class AvoidUsingHardCodedIPRule extends AbstractJavaRulechainRule {
 
     private enum AddressKinds {
-        IPV4("IPv4"),
-        IPV6("IPv6"),
-        IPV4_MAPPED_IPV6("IPv4 mapped IPv6");
-
-        private final String label;
-
-        AddressKinds(String label) {
-            this.label = label;
-        }
+        IPV4,
+        IPV6,
+        IPV4_MAPPED_IPV6
     }
 
+    private static final Map<String, AddressKinds> DEPRECATED_ADDRESS_KINDS = CollectionUtil.mapOf(
+            "IPv4", AddressKinds.IPV4,
+            "IPv6", AddressKinds.IPV6,
+            "IPv4 mapped IPv6", AddressKinds.IPV4_MAPPED_IPV6
+    );
 
     private static final PropertyDescriptor<List<AddressKinds>> CHECK_ADDRESS_TYPES_DESCRIPTOR =
-        PropertyFactory.enumListProperty("checkAddressTypes", AddressKinds.class, k -> k.label)
+        PropertyFactory.enumListPropertyTransitional("checkAddressTypes", AddressKinds.class, DEPRECATED_ADDRESS_KINDS)
                        .desc("Check for IP address types.")
                        .defaultValue(asList(AddressKinds.values()))
                        .build();
@@ -72,7 +73,7 @@ public class AvoidUsingHardCodedIPRule extends AbstractJavaRulechainRule {
         // Note: We used to check the addresses using
         // InetAddress.getByName(String), but that's extremely slow,
         // so we created more robust checking methods.
-        if (image.length() > 0) {
+        if (!image.isEmpty()) {
             final char firstChar = Character.toUpperCase(image.charAt(0));
 
             boolean checkIPv4 = kindsToCheck.contains(AddressKinds.IPV4);
@@ -80,7 +81,7 @@ public class AvoidUsingHardCodedIPRule extends AbstractJavaRulechainRule {
             boolean checkIPv4MappedIPv6 = kindsToCheck.contains(AddressKinds.IPV4_MAPPED_IPV6);
 
             if (checkIPv4 && isIPv4(firstChar, image) || isIPv6(firstChar, image, checkIPv6, checkIPv4MappedIPv6)) {
-                asCtx(data).addViolation(node);
+                asCtx(data).addViolation(node, image);
             }
         }
         return data;
@@ -141,9 +142,10 @@ public class AvoidUsingHardCodedIPRule extends AbstractJavaRulechainRule {
                 zeroSubstitution = true;
             }
 
-            // String.split() doesn't produce an empty String in the trailing
-            // case, but it does in the leading.
-            if (s.endsWith(":")) {
+            // leading/trailing "::" has already been dealt with.
+            // If the address still starts or ends with ":", then it
+            // is invalid
+            if (s.startsWith(":") || s.endsWith(":")) {
                 return false;
             }
 
@@ -153,7 +155,7 @@ public class AvoidUsingHardCodedIPRule extends AbstractJavaRulechainRule {
             String[] parts = s.split(":");
             for (int i = 0; i < parts.length; i++) {
                 final String part = parts[i];
-                // An empty part indicates :: was encountered. There can only be
+                // An empty part indicates :: was encountered in the middle. There can only be
                 // 1 such instance.
                 if (part.length() == 0) {
                     if (zeroSubstitution) {

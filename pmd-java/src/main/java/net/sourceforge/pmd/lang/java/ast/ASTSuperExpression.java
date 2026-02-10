@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -23,8 +23,7 @@ public final class ASTSuperExpression extends AbstractJavaExpr implements ASTPri
     }
 
 
-    @Nullable
-    public ASTClassType getQualifier() {
+    public @Nullable ASTClassType getQualifier() {
         return getNumChildren() > 0 ? (ASTClassType) getChild(0) : null;
     }
 

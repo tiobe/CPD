@@ -1,8 +1,10 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
 package net.sourceforge.pmd.doc.internal;
+
+import static net.sourceforge.pmd.properties.internal.PropertyParsingUtil.DEPRECATED_RULE_PROPERTY_MARKER;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.regex.Matcher;
@@ -56,7 +59,6 @@ public class RuleDocGenerator {
 
     private static final String DEPRECATION_LABEL_SMALL = "<span style=\"border-radius: 0.25em; color: #fff; padding: 0.2em 0.6em 0.3em; display: inline; background-color: #d9534f; font-size: 75%;\">Deprecated</span> ";
     private static final String DEPRECATION_LABEL = "<span style=\"border-radius: 0.25em; color: #fff; padding: 0.2em 0.6em 0.3em; display: inline; background-color: #d9534f;\">Deprecated</span>";
-    private static final String DEPRECATED_RULE_PROPERTY_MARKER = "deprecated!";
 
     private static final String GITHUB_SOURCE_LINK = "https://github.com/pmd/pmd/blob/main/";
 
@@ -375,6 +377,8 @@ public class RuleDocGenerator {
                         .replace("${ruleset.name}", rulesetFilename);
                 String ruleSetSourceFilepath = "../" + allRulesets.get(ruleset.getFileName());
 
+                List<Rule> sortedRules = getSortedRules(ruleset);
+
                 List<String> lines = new LinkedList<>();
                 lines.add("---");
                 lines.add("title: " + ruleset.getName());
@@ -383,35 +387,40 @@ public class RuleDocGenerator {
                 lines.add("folder: pmd/rules/" + languageTersename);
                 lines.add("sidebaractiveurl: /" + LANGUAGE_INDEX_PERMALINK_PATTERN.replace("${language.tersename}", languageTersename));
                 lines.add("editmepath: " + ruleSetSourceFilepath);
-                lines.add("keywords: " + getRuleSetKeywords(ruleset));
+                lines.add("keywords: " + ruleset.getName() + getRuleSetKeywords(sortedRules));
+                lines.add("rules:");
+                for (Rule rule : sortedRules) {
+                    lines.add("  " + rule.getName() + ": |");
+
+                    if (isRuleRenamed(rule, ruleset)) {
+                        getRuleRenamedDeprecationNotice(rule).stream()
+                                .map(line -> "    " + line)
+                                .forEachOrdered(lines::add);
+                    } else if (isRuleMoved(rule, ruleset)) {
+                        getRuleMovedDeprecationNotice(rule, languageTersename).stream()
+                                .map(line -> "    " + line)
+                                .forEachOrdered(lines::add);
+                    } else {
+                        List<String> description = EscapeUtils.escapeLines(toLines(stripIndentation(rule.getDescription())));
+                        description.stream()
+                                .map(line -> "    " + line)
+                                .forEachOrdered(lines::add);
+                    }
+                }
                 lines.add("language: " + languageName);
                 lines.add("---");
                 lines.add(GENERATED_WARNING.replace("${source}", ruleSetSourceFilepath));
 
-                for (Rule rule : getSortedRules(ruleset)) {
+                for (Rule rule : sortedRules) {
                     lines.add("## " + rule.getName());
                     lines.add("");
 
-                    if (rule instanceof RuleReference) {
-                        RuleReference ref = (RuleReference) rule;
-                        if (ruleset.getFileName().equals(ref.getRuleSetReference().getRuleSetFileName())) {
-                            // rule renamed within same ruleset
-                            lines.add(DEPRECATION_LABEL);
-                            lines.add("");
-                            lines.add("This rule has been renamed. Use instead: ["
-                                    + ref.getRule().getName() + "](" + "#" + ref.getRule().getName().toLowerCase(Locale.ROOT) + ")");
-                            lines.add("");
-                        } else {
-                            // rule moved to another ruleset
-                            String otherLink = RULESET_INDEX_PERMALINK_PATTERN
-                                    .replace("${language.tersename}", languageTersename)
-                                    .replace("${ruleset.name}", RuleSetUtils.getRuleSetFilename(ref.getRuleSetReference().getRuleSetFileName()));
-                            lines.add(DEPRECATION_LABEL);
-                            lines.add("");
-                            lines.add("The rule has been moved to another ruleset. Use instead: ["
-                                    + ref.getRule().getName() + "](" + otherLink + "#" + ref.getRule().getName().toLowerCase(Locale.ROOT) + ")");
-                            lines.add("");
-                        }
+                    if (isRuleRenamed(rule, ruleset)) {
+                        // rule renamed within same ruleset
+                        lines.addAll(getRuleRenamedDeprecationNotice(rule));
+                    } else if (isRuleMoved(rule, ruleset)) {
+                        // rule moved to another ruleset
+                        lines.addAll(getRuleMovedDeprecationNotice(rule, languageTersename));
                     }
 
                     if (rule.isDeprecated()) {
@@ -483,14 +492,35 @@ public class RuleDocGenerator {
                                 description = description.substring(DEPRECATED_RULE_PROPERTY_MARKER.length());
                             }
 
-                            String defaultValue = determineDefaultValueAsString(propertyDescriptor, rule, true);
+                            String enumValuesDescription = "";
+                            Set<?> enumValues = propertyDescriptor.serializer().enumeratedValues();
+                            if (!enumValues.isEmpty()) {
+                                if (propertyDescriptor.serializer().isCollection()) {
+                                    enumValuesDescription = "<br>Zero or more of: ";
+                                    enumValues = enumValues.stream().map(Collections::singleton).collect(Collectors.toSet());
+                                } else {
+                                    enumValuesDescription = "<br>One of: ";
+                                }
+                                enumValuesDescription += enumValues.stream()
+                                        .map(v -> EscapeUtils.escapeMarkdown(determinePropertyValueAsString(propertyDescriptor, v)))
+                                        .map(v -> "`" + v + "`")
+                                        .sorted()
+                                        .collect(Collectors.joining(", "));
+                            }
+
+                            String defaultValue = determinePropertyValueAsString(propertyDescriptor, propertyDescriptor.defaultValue());
+                            if (propertyDescriptor.serializer().isCollection()) {
+                                // surround the delimiter of multi property with spaces, so that the browser can wrap the value nicely
+                                defaultValue = defaultValue.replaceAll(",", " , ");
+                            }
 
                             lines.add("|"
                                     + EscapeUtils.escapeMarkdown(StringEscapeUtils.escapeHtml4(propertyDescriptor.name()))
                                     + "|"
-                                    + EscapeUtils.escapeMarkdown(defaultValue)
+                                    + EscapeUtils.escapeMarkdown(StringEscapeUtils.escapeHtml4(defaultValue))
                                     + "|"
                                     + EscapeUtils.escapeMarkdown((isDeprecated ? DEPRECATION_LABEL_SMALL : "") + StringEscapeUtils.escapeHtml4(description))
+                                    + enumValuesDescription
                                     + "|"
                             );
                         }
@@ -514,7 +544,8 @@ public class RuleDocGenerator {
                         lines.add("    <properties>");
                         for (PropertyDescriptor<?> propertyDescriptor : properties) {
                             if (!isDeprecated(propertyDescriptor)) {
-                                String defaultValue = determineDefaultValueAsString(propertyDescriptor, rule, false);
+                                String defaultValue = determinePropertyValueAsString(propertyDescriptor, propertyDescriptor.defaultValue());
+                                defaultValue = StringEscapeUtils.escapeXml10(defaultValue);
                                 lines.add("        <property name=\"" + propertyDescriptor.name() + "\" value=\""
                                               + defaultValue + "\" />");
                             }
@@ -532,6 +563,47 @@ public class RuleDocGenerator {
         }
     }
 
+    private Collection<String> getRuleMovedDeprecationNotice(Rule rule, String languageTersename) {
+        RuleReference ref = (RuleReference) rule;
+        List<String> lines = new LinkedList<>();
+        String otherLink = RULESET_INDEX_PERMALINK_PATTERN
+                .replace("${language.tersename}", languageTersename)
+                .replace("${ruleset.name}", RuleSetUtils.getRuleSetFilename(ref.getRuleSetReference().getRuleSetFileName()));
+        lines.add(DEPRECATION_LABEL);
+        lines.add("");
+        lines.add("The rule has been moved to another ruleset. Use instead: ["
+                + ref.getRule().getName() + "](" + otherLink + "#" + ref.getRule().getName().toLowerCase(Locale.ROOT) + ")");
+        lines.add("");
+        return lines;
+    }
+
+    private Collection<String> getRuleRenamedDeprecationNotice(Rule rule) {
+        RuleReference ref = (RuleReference) rule;
+        List<String> lines = new LinkedList<>();
+        lines.add(DEPRECATION_LABEL);
+        lines.add("");
+        lines.add("This rule has been renamed. Use instead: ["
+                + ref.getRule().getName() + "](" + "#" + ref.getRule().getName().toLowerCase(Locale.ROOT) + ")");
+        lines.add("");
+        return lines;
+    }
+
+    private boolean isRuleRenamed(Rule rule, RuleSet ruleset) {
+        if (rule instanceof RuleReference) {
+            RuleReference ref = (RuleReference) rule;
+            return ruleset.getFileName().equals(ref.getRuleSetReference().getRuleSetFileName());
+        }
+        return false;
+    }
+
+    private boolean isRuleMoved(Rule rule, RuleSet ruleset) {
+        if (rule instanceof RuleReference) {
+            RuleReference ref = (RuleReference) rule;
+            return !ruleset.getFileName().equals(ref.getRuleSetReference().getRuleSetFileName());
+        }
+        return false;
+    }
+
     private XPathRule asXPathRule(Rule rule) {
         if (rule instanceof XPathRule) {
             return (XPathRule) rule;
@@ -546,20 +618,8 @@ public class RuleDocGenerator {
             && propertyDescriptor.description().toLowerCase(Locale.ROOT).startsWith(DEPRECATED_RULE_PROPERTY_MARKER);
     }
 
-    private <T> String determineDefaultValueAsString(PropertyDescriptor<T> propertyDescriptor, Rule rule, boolean pad) {
-        String defaultValue = "";
-        T realDefaultValue = rule.getProperty(propertyDescriptor);
-
-        if (realDefaultValue != null) {
-            defaultValue = propertyDescriptor.serializer().toString(realDefaultValue);
-            if (pad && realDefaultValue instanceof Collection) {
-                // surround the delimiter with spaces, so that the browser can wrap
-                // the value nicely
-                defaultValue = defaultValue.replaceAll(",", " , ");
-            }
-        }
-        defaultValue = StringEscapeUtils.escapeHtml4(defaultValue);
-        return defaultValue;
+    private <T> String determinePropertyValueAsString(PropertyDescriptor<T> propertyDescriptor, Object value) {
+        return propertyDescriptor.serializer().toString((T) value);
     }
 
     private static String stripIndentation(String description) {
@@ -608,12 +668,16 @@ public class RuleDocGenerator {
         return languageTersename;
     }
 
-    private String getRuleSetKeywords(RuleSet ruleset) {
+    private String getRuleSetKeywords(List<Rule> rules) {
+        if (rules.isEmpty()) {
+            return "";
+        }
+
         List<String> ruleNames = new LinkedList<>();
-        for (Rule rule : ruleset.getRules()) {
+        for (Rule rule : rules) {
             ruleNames.add(rule.getName());
         }
-        return ruleset.getName() + ", " + StringUtils.join(ruleNames, ", ");
+        return ", " + StringUtils.join(ruleNames, ", ");
     }
 
     private List<Rule> getSortedRules(RuleSet ruleset) {

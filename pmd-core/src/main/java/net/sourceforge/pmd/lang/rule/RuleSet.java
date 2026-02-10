@@ -1,4 +1,4 @@
-/**
+/*
  * BSD-style license; for more info see http://pmd.sourceforge.net/license.html
  */
 
@@ -175,7 +175,21 @@ public class RuleSet implements ChecksumAware {
         return new RuleSet(original);
     }
 
-    /* package */ static class RuleSetBuilder {
+    /**
+     * Return a ruleset builder used to create rules. It is initialized with
+     * the configuration of this ruleset.
+     */
+    public RuleSetBuilder toBuilder() {
+        return new RuleSetBuilder(this);
+    }
+
+    /**
+     * A builder class to create a ruleset.
+     *
+     * @since 7.14.0
+     * @see #toBuilder()
+     */
+    public static class RuleSetBuilder {
 
         public String description;
         public String name;
@@ -226,6 +240,13 @@ public class RuleSet implements ChecksumAware {
 
             rules.add(newRule);
             return this;
+        }
+
+        /**
+         * Remove all rules that matched the predicate.
+         */
+        public boolean removeIf(Predicate<? super Rule> filter) {
+            return rules.removeIf(filter);
         }
 
         /**
@@ -606,7 +627,7 @@ public class RuleSet implements ChecksumAware {
      * @return <code>true</code> if the file should be checked,
      *     <code>false</code> otherwise
      *
-     * @apiNote Internal API.
+     * @internalApi None of this is published API, and compatibility can be broken anytime! Use this only at your own risk.
      */
     boolean applies(FileId qualFileName) {
         return filter.test(qualFileName.getAbsolutePath());
@@ -625,12 +646,21 @@ public class RuleSet implements ChecksumAware {
      * @return <code>true</code> if the given rule matches the given language,
      *         which means, that the rule would be executed.
      *
-     * @apiNote This is internal API.
+     * @internalApi None of this is published API, and compatibility can be broken anytime! Use this only at your own risk.
      */
     static boolean applies(Rule rule, LanguageVersion languageVersion) {
+        assert rule.getLanguage() != null : "Rule has no language " + rule;
+
+        if (languageVersion.getLanguage().isDialectOf(rule.getLanguage())) {
+            // Dialects don't check the version of the base language yet…
+            return true;
+        }
+
         final LanguageVersion min = rule.getMinimumLanguageVersion();
         final LanguageVersion max = rule.getMaximumLanguageVersion();
-        assert rule.getLanguage() != null : "Rule has no language " + rule;
+
+        // All rules from base languages also apply to dialects. They
+        // have to share a parser for that to work.
         return rule.getLanguage().equals(languageVersion.getLanguage())
                 && (min == null || min.compareTo(languageVersion) <= 0)
                 && (max == null || max.compareTo(languageVersion) >= 0);
