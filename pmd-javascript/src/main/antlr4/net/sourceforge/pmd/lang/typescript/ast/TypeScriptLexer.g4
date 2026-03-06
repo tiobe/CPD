@@ -1,6 +1,6 @@
 lexer grammar TypeScriptLexer;
 
-channels { ERROR }
+channels { ERROR, TEMPLATE_CHANNEL }
 
 options {
     superClass=TypeScriptLexerBase;
@@ -17,7 +17,7 @@ OpenParen:                      '(';
 CloseParen:                     ')';
 OpenBrace:                      '{' {this.ProcessOpenBrace();};
 TemplateCloseBrace:             {this.IsInTemplateString()}? '}' -> popMode;
-CloseBrace:                     '}' {this.ProcessCloseBrace();};
+CloseBrace:                     {!this.IsInTemplateString()}? '}' {this.ProcessCloseBrace();};
 SemiColon:                      ';';
 Comma:                          ',';
 Assign:                         '=';
@@ -198,7 +198,7 @@ mode TEMPLATE;
 TemplateStringEscapeAtom:       '\\' .;
 BackTickInside:                 '`' {this.DecreaseTemplateDepth();} -> type(BackTick), popMode;
 TemplateStringStartExpression:  '${' {this.StartTemplateString();} -> pushMode(DEFAULT_MODE);
-TemplateStringAtom:             ~[`\\];
+TemplateStringAtom:             ~[`\\$]+;
 
 // Fragment rules
 
