@@ -24,4 +24,9 @@ class TypeScriptCpdLexerTest extends CpdTextComparisonTest {
     void apiSampleWatchTest() {
         doTest("APISample_Watch");
     }
+    
+    @Test
+    void templateStringTest() {
+        doTest("template_strings");
+    }
 }
