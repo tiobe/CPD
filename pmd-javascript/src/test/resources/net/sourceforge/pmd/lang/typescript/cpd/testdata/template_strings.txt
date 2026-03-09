@@ -5,7 +5,10 @@ L1
     [info]                                  8         12
     [(]                                     12        13
     [`]                                     13        14
-    [Running action on event: ]             14        39
+    [Running]                               14        21
+    [action]                                22        28
+    [on]                                    29        31
+    [event:]                                32        38
     [${]                                    39        41
     [githubConfig]                          41        53
     [.]                                     53        54
@@ -13,7 +16,8 @@ L1
     [.]                                     59        60
     [name]                                  60        64
     [}]                                     64        65
-    [ with mode: ]                          65        77
+    [with]                                  66        70
+    [mode:]                                 71        76
     [${]                                    77        79
     [config]                                79        85
     [.]                                     85        86
@@ -27,8 +31,19 @@ L3
     [default]                               8         15
     [createStyleSheet]                      16        32
     [`]                                     32        33
-    [\n    * {\n        box-sizing: bor[    33        21
+L4
+    [*]                                     5         6
+    [{]                                     7         8
+L5
+    [box-sizing:]                           9         20
+    [border-box;]                           21        32
+L6
+    [}]                                     5         6
+L7
+    [::selection]                           5         16
+    [{]                                     17        18
 L8
+    [background:]                           9         20
     [${]                                    21        23
     [(]                                     23        24
     [{]                                     24        25
@@ -44,8 +59,9 @@ L8
     [.]                                     57        58
     [infoDark]                              58        66
     [}]                                     66        67
-    [;\n        color: ]                    67        16
+    [;]                                     67        68
 L9
+    [color:]                                9         15
     [${]                                    16        18
     [(]                                     18        19
     [{]                                     19        20
@@ -61,8 +77,42 @@ L9
     [.]                                     52        53
     [neutral]                               53        60
     [}]                                     60        61
-    [;\n    }\n    div, label, p, span [    61        27
+    [;]                                     61        62
+L10
+    [}]                                     5         6
+L11
+    [div,]                                  5         9
+    [label,]                                10        16
+    [p,]                                    17        19
+    [span]                                  20        24
+    [{]                                     25        26
+L12
+    [user-select:]                          9         21
+    [none;]                                 22        27
+L13
+    [}]                                     5         6
+L14
+    [html]                                  5         9
+    [{]                                     10        11
+L15
+    [height:]                               9         16
+    [100%;]                                 17        22
+L16
+    [-moz-osx-font-smoothing:]              9         33
+    [grayscale;]                            34        44
+L17
+    [-webkit-font-smoothing:]               9         32
+    [antialiased;]                          33        45
+L18
+    [text-rendering:]                       9         24
+    [optimizeLegibility;]                   25        44
+L19
+    [}]                                     5         6
+L20
+    [body]                                  5         9
+    [{]                                     10        11
 L21
+    [background-color:]                     9         26
     [${]                                    27        29
     [(]                                     29        30
     [{]                                     30        31
@@ -78,7 +128,24 @@ L21
     [.]                                     68        69
     [page]                                  69        73
     [}]                                     73        74
-    [;\n        margin: 0;\n        pad[    74        7
+    [;]                                     74        75
+L22
+    [margin:]                               9         16
+    [0;]                                    17        19
+L23
+    [padding:]                              9         17
+    [0;]                                    18        20
+L24
+    [height:]                               9         16
+    [100%;]                                 17        22
+L25
+    [overflow:]                             9         18
+    [hidden;]                               19        26
+L26
+    [display:]                              9         17
+    [flex;]                                 18        23
+L27
+    [}]                                     5         6
 L28
     [`]                                     1         2
     [;]                                     2         3
