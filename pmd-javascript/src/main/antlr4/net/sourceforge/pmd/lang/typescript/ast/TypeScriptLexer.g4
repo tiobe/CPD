@@ -17,7 +17,7 @@ OpenParen:                      '(';
 CloseParen:                     ')';
 OpenBrace:                      '{' {this.ProcessOpenBrace();};
 TemplateCloseBrace:             {this.IsInTemplateString()}? '}' -> popMode;
-CloseBrace:                     {!this.IsInTemplateString()}? '}' {this.ProcessCloseBrace();};
+CloseBrace:                     '}' {this.ProcessCloseBrace();};
 SemiColon:                      ';';
 Comma:                          ',';
 Assign:                         '=';
