@@ -19,4 +19,9 @@ class AwlCpdLexerTest extends CpdTextComparisonTest {
         doTest("awl_examples");
     }
 
+    @Test
+    void headers() {
+        doTest("headers");
+    }
+
 }
