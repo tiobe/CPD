@@ -9,11 +9,11 @@ LOGICCOMPARISON : '==0' | '<>0' | '>0' | '<0' | '>=0' | '<=0' ;
 
 TITLE : 'TITLE' Whitespace? '=' ~[\r\n]* LineTerm? ;
 FUNCTION_BLOCK : 'FUNCTION_BLOCK' Whitespace StringConstant (Whitespace? ':' Whitespace? ID)? LineTerm? ;
-BRACED_BLOCK: '{' ~[\r\n]+ '}' LineTerm? ;
-TOPLEVEL_FIELD: [A-Z]+ Whitespace? ':' Whitespace? (REAL | INT | StringConstant | ID)+ LineTerm? ;
+fragment BRACED_BLOCK: '{' ~[\r\n]+ '}' LineTerm? ;
+FAMILY_FIELD: 'FAMILY' Whitespace? ':' Whitespace? (REAL | INT | StringConstant | ID)+ LineTerm? ;
+VERSION_FIELD: 'VERSION' Whitespace? ':' Whitespace? (REAL | INT | StringConstant | ID)+ LineTerm? ;
 
-HEADER_ITEM: TITLE | FUNCTION_BLOCK | BRACED_BLOCK | TOPLEVEL_FIELD;
-HEADER: HEADER_ITEM+ -> channel(HIDDEN) ;
+HEADER: FUNCTION_BLOCK TITLE BRACED_BLOCK* FAMILY_FIELD? VERSION_FIELD -> channel(HIDDEN) ;
 
 POINTER_OP : 'P#' 'DBX'? ;
 
