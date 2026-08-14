@@ -7,7 +7,13 @@ INSTRUCTIONNAME : '<=' | '+AR1' | '+AR2' | '+D' | '-D' | '*D' | '/D' | '==D' | '
 
 LOGICCOMPARISON : '==0' | '<>0' | '>0' | '<0' | '>=0' | '<=0' ;
 
-TITLE : 'TITLE' [ \t]* '=' ~[\r\n]* ;
+TITLE : 'TITLE' Whitespace? '=' ~[\r\n]* LineTerm? ;
+FUNCTION_BLOCK : ID Whitespace StringConstant (Whitespace? ':' Whitespace? ID)? LineTerm? ;
+fragment BRACED_BLOCK: '{' ~[\r\n]+ '}' LineTerm? ;
+FAMILY_FIELD: 'FAMILY' Whitespace? ':' Whitespace? (REAL | INT | StringConstant | ID)+ LineTerm? ;
+VERSION_FIELD: 'VERSION' Whitespace? ':' Whitespace? (REAL | INT | StringConstant | ID)+ LineTerm? ;
+
+HEADER: FUNCTION_BLOCK TITLE BRACED_BLOCK* FAMILY_FIELD? VERSION_FIELD -> channel(HIDDEN) ;
 
 POINTER_OP : 'P#' 'DBX'? ;
 

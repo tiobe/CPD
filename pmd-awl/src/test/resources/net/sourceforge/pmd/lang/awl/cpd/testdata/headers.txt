@@ -1,0 +1,18 @@
+    [Image] or [Truncated image[            Bcol      Ecol
+L14
+    [NETWORK]                               1         8
+L15
+    [TITLE = GC: Start transfers SWS07/[    1         41
+L16
+    [NOP]                                   7         10
+    [0]                                     11        12
+    [;]                                     12        13
+L18
+    [NETWORK]                               1         8
+L19
+    [TITLE = HA: Transfer data from TRS[    1         47
+L20
+    [NOP]                                   7         10
+    [0]                                     11        12
+    [;]                                     12        13
+EOF

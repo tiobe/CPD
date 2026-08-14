@@ -1,23 +1,4 @@
     [Image] or [Truncated image[            Bcol      Ecol
-L5
-    [FUNCTION_BLOCK]                        1         15
-    ["fb1"]                                 16        21
-L6
-    [TITLE = %version: 1 % Title inform[    1         64
-L7
-    [{]                                     1         2
-    [this_is_false]                         3         16
-    [:=]                                    17        19
-    ['FALSE']                               20        27
-    [}]                                     28        29
-L8
-    [FAMILY]                                1         7
-    [:]                                     8         9
-    [Fam1]                                  10        14
-L9
-    [VERSION]                               1         8
-    [:]                                     9         10
-    [0.0]                                   11        14
 L12
     [VAR_INPUT]                             4         13
 L13

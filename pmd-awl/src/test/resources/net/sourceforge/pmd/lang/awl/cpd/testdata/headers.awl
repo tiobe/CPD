@@ -1,0 +1,31 @@
+FUNCTION_BLOCK "fb1"
+TITLE = %version: 1 % Title information is present here % $ ^ \
+{ this_is_false := 'FALSE' }
+FAMILY : Fam1
+VERSION : 0.0
+
+FUNCTION_BLOCK "fb2" : Void
+TITLE = %version: 2 % Title information is present here % $ ^ \
+{ this_is_false := 'TRUE' }
+FAMILY : Fam2
+VERSION : 0.2
+
+
+NETWORK
+TITLE = GC: Start transfers SWS07/TRS08
+      NOP 0;
+
+NETWORK
+TITLE = HA: Transfer data from TRS03 to TRS01
+      NOP 0;
+
+FUNCTION "F1" : Void
+TITLE = %version: 42% %Commit: badbed1%
+{ this_is_false_again := 'FALSE' }
+FAMILY : Brouwers
+VERSION : 0.2
+
+ORGANIZATION_BLOCK "YOU_ARE_BLOCKED"
+TITLE = The Memoirs of an Organization Block
+{ this_is_false_is_false := 'TRUE' }
+VERSION : 9000.1
