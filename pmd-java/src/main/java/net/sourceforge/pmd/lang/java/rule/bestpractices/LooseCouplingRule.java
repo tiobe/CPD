@@ -27,6 +27,7 @@ import net.sourceforge.pmd.lang.java.rule.AbstractJavaRulechainRule;
 import net.sourceforge.pmd.lang.java.types.TypeTestUtil;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
 import net.sourceforge.pmd.properties.PropertyFactory;
+import net.sourceforge.pmd.reporting.RuleContext;
 
 public class LooseCouplingRule extends AbstractJavaRulechainRule {
 
@@ -43,12 +44,14 @@ public class LooseCouplingRule extends AbstractJavaRulechainRule {
 
     @Override
     public Object visit(ASTClassType node, Object data) {
+        RuleContext ctx = (RuleContext) data;
+
         if (isConcreteCollectionType(node)
             && !isInOverriddenMethodSignature(node)
             && !isInAllowedSyntacticCtx(node)
             && !isAllowedType(node)
             && !isTypeParameter(node)) {
-            asCtx(data).addViolation(node, node.getSimpleName());
+            ctx.addViolation(node, node.getSimpleName());
         }
         return null;
     }
@@ -85,7 +88,7 @@ public class LooseCouplingRule extends AbstractJavaRulechainRule {
     private static boolean isInOverriddenMethodSignature(JavaNode node) {
         JavaNode ancestor = node.ancestors().map(NodeStream.asInstanceOf(ASTMethodDeclaration.class, ASTBlock.class)).first();
         // when it's in a signature and not the body
-        return ancestor instanceof ASTMethodDeclaration && ((ASTMethodDeclaration) ancestor).isOverridden();
+        return ancestor instanceof ASTMethodDeclaration && ((ASTMethodDeclaration) ancestor).isOverride();
     }
 
     private boolean isTypeParameter(ASTClassType node) {

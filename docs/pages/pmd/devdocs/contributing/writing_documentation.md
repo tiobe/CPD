@@ -1,7 +1,7 @@
 ---
 title: Writing documentation
 tags: [devdocs]
-last_updated: January 2026 (7.21.0)
+last_updated: September 2026 (7.28.0)
 permalink: pmd_devdocs_writing_documentation.html
 keywords: documentation, jekyll, markdown
 author: Andreas Dangel <andreas.dangel@adangel.org>
@@ -162,13 +162,21 @@ For a more exhaustive list, see [Pages - Frontmatter](http://idratherbewriting.c
 
 See [Alerts](http://idratherbewriting.com/documentation-theme-jekyll/mydoc_alerts.html).
 
-For example, a info-box can be created like this:
+For example, an info-box can be created like this:
 
     {%raw%}{% include note.html content="This is a note." %}{%endraw%}
 
 It renders as:
 
 {% include note.html content="This is a note." %}
+
+{% include important.html content="This include tag has to be at the beginning of the line (no indentation):
+Jekyll pastes the content verbatim and only the first line gets the indentation. Further lines start at 0
+and end an ongoing list. It works, if the content is only one line.
+
+If you have multiple lines, you'll need to add the &lt;div&gt; from the included file yourself and not use include
+at all.
+" %}
 
 Other available types are:
 

@@ -19,14 +19,12 @@ import net.sourceforge.pmd.lang.java.ast.ASTResource;
 import net.sourceforge.pmd.lang.java.ast.ASTReturnStatement;
 import net.sourceforge.pmd.lang.java.ast.ASTStatement;
 import net.sourceforge.pmd.lang.java.ast.ASTThrowStatement;
-import net.sourceforge.pmd.lang.java.ast.ASTVariableAccess;
 import net.sourceforge.pmd.lang.java.ast.ASTVariableId;
 import net.sourceforge.pmd.lang.java.ast.internal.JavaAstUtils;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRulechainRule;
 import net.sourceforge.pmd.lang.java.rule.internal.JavaRuleUtil;
 import net.sourceforge.pmd.lang.java.symbols.JVariableSymbol;
-import net.sourceforge.pmd.lang.java.types.InvocationMatcher;
-import net.sourceforge.pmd.lang.java.types.InvocationMatcher.CompoundInvocationMatcher;
+import net.sourceforge.pmd.reporting.RuleContext;
 
 /**
  * Checks for variables in methods that are defined before they are really
@@ -38,18 +36,14 @@ import net.sourceforge.pmd.lang.java.types.InvocationMatcher.CompoundInvocationM
  */
 public class PrematureDeclarationRule extends AbstractJavaRulechainRule {
 
-    private static final CompoundInvocationMatcher TIME_METHODS =
-        InvocationMatcher.parseAll(
-            "java.lang.System#nanoTime()",
-            "java.lang.System#currentTimeMillis()"
-        );
-
     public PrematureDeclarationRule() {
         super(ASTLocalVariableDeclaration.class);
     }
 
     @Override
     public Object visit(ASTLocalVariableDeclaration node, Object data) {
+        RuleContext ctx = (RuleContext) data;
+
         if (node.getParent() instanceof ASTForInit
             || node.getParent() instanceof ASTResource) {
             // those don't count
@@ -60,7 +54,7 @@ public class PrematureDeclarationRule extends AbstractJavaRulechainRule {
             ASTExpression initializer = id.getInitializer();
 
             if (JavaAstUtils.isNeverUsed(id) // avoid the duplicate with unused variables
-                || cannotBeMoved(initializer)
+                || JavaRuleUtil.cannotBeMoved(initializer)
                 || JavaRuleUtil.hasSideEffect(initializer, emptySet())) {
                 continue;
             }
@@ -70,13 +64,13 @@ public class PrematureDeclarationRule extends AbstractJavaRulechainRule {
             // then we don't care about side-effects
             boolean hasStatefulInitializer = !refsInInitializer.isEmpty() || JavaRuleUtil.hasSideEffect(initializer, emptySet());
             for (ASTStatement stmt : statementsAfter(node)) {
-                if (hasReferencesIn(stmt, id)
+                if (JavaRuleUtil.hasReferencesIn(stmt, id)
                     || hasStatefulInitializer && JavaRuleUtil.hasSideEffect(stmt, refsInInitializer)) {
                     break;
                 }
 
                 if (hasExit(stmt)) {
-                    asCtx(data).addViolation(node, id.getName());
+                    ctx.addViolation(node, id.getName());
                     break;
                 }
             }
@@ -97,15 +91,6 @@ public class PrematureDeclarationRule extends AbstractJavaRulechainRule {
     }
 
     /**
-     * Time methods cannot be moved ever, even when there are no side-effects.
-     * The side effect they depend on is the program being executed. Are they
-     * the only methods like that?
-     */
-    private boolean cannotBeMoved(ASTExpression initializer) {
-        return TIME_METHODS.anyMatch(initializer);
-    }
-
-    /**
      * Returns whether the block contains a return call or throws an exception.
      * Exclude blocks that have these things as part of an inner class.
      */
@@ -113,17 +98,6 @@ public class PrematureDeclarationRule extends AbstractJavaRulechainRule {
         return block.descendants()
                     .map(asInstanceOf(ASTThrowStatement.class, ASTReturnStatement.class))
                     .nonEmpty();
-    }
-
-
-    /**
-     * Returns whether the variable is mentioned within the statement or not.
-     */
-    private static boolean hasReferencesIn(ASTStatement stmt, ASTVariableId var) {
-        return stmt.descendants(ASTVariableAccess.class)
-                   .crossFindBoundaries()
-                   .filterMatching(ASTNamedReferenceExpr::getReferencedSym, var.getSymbol())
-                   .nonEmpty();
     }
 
     /** Returns all the statements following the given local var declaration. */

@@ -9,6 +9,39 @@
 Rules to detect constructs that are either broken, extremely confusing or prone to runtime errors.
     </description>
 
+    <rule name="AssertEqualsArgumentOrder"
+          language="java"
+          since="7.26.0"
+          message="This assertEquals() call has mixed up expected and actual arguments"
+          class="net.sourceforge.pmd.lang.java.rule.errorprone.AssertEqualsArgumentOrderRule"
+          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#assertequalsargumentorder">
+        <description>
+            Unit testing frameworks provide the `assertEquals` method that takes expected and actual
+            value of an object as arguments.
+
+            Passing a constant as the actual value and a computed value as the expected value
+            indicates that the actual and expected values were swapped, leading to confusing
+            error messages should the test fail.
+
+            This rule currently supports assertions from JUnit Jupiter, JUnit versions 4 and 3,
+            TestNG, Spring assertions and the JSONAssert library.
+        </description>
+        <priority>3</priority>
+        <example>
+            <![CDATA[
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+public class SimpleTest {
+    @Test
+    public void testX() {
+        assertEquals(next("foo"), "bar"); // wrong argument order
+        assertEquals("bar", next("foo")); // good
+    }
+}
+]]>
+        </example>
+    </rule>
+
     <rule name="AssignmentInOperand"
           language="java"
           since="1.03"
@@ -554,7 +587,7 @@ Each caught exception type should be handled in its own catch clause.
 //CatchParameter
     /following-sibling::Block//InfixExpression[@Operator = 'instanceof']
         /VariableAccess[@Name = ./ancestor::Block/preceding-sibling::CatchParameter/@Name]
-            /following-sibling::TypeExpression/*
+            /following-sibling::*[self::TypeExpression or self::PatternExpression]//ClassType[1]
 ]]>
                 </value>
             </property>
@@ -806,7 +839,11 @@ public String bar(String string) {
           message="super should be called at the start of the method"
           class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#callsuperfirst">
-        <description>Super should be called at the start of the method</description>
+        <description>
+Super should be called at the start of the method
+
+This rule is intended for Android development. Don't use for general purpose java development!
+        </description>
         <priority>3</priority>
         <properties>
             <property name="xpath">
@@ -851,6 +888,8 @@ public class DummyActivity extends Activity {
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#callsuperlast">
         <description>
 Super should be called at the end of the method
+
+This rule is intended for Android development. Don't use for general purpose java development!
         </description>
         <priority>3</priority>
         <properties>
@@ -889,11 +928,15 @@ public class DummyActivity extends Activity {
     <rule name="CheckSkipResult"
           language="java"
           since="5.0"
+          deprecated="true"
           message="Check the value returned by the skip() method of an InputStream to see if the requested number of bytes has been skipped."
           class="net.sourceforge.pmd.lang.java.rule.errorprone.CheckSkipResultRule"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#checkskipresult">
         <description>
 The skip() method may skip a smaller number of bytes than requested. Check the returned value to find out if it was the case or not.
+
+**Deprecated:** This rule is deprecated since PMD 7.27.0 and will be removed with PMD 8.0.0.
+This rule has been replaced by {% rule UnusedReturnValue %}
         </description>
         <priority>3</priority>
         <example>
@@ -1084,6 +1127,22 @@ the types, if the type resolution / auxclasspath is not correctly setup.
 Note: Since PMD 6.16.0 the default value for the property `types` contains `java.lang.AutoCloseable` and detects
 now cases where the standard `java.io.*Stream` classes are involved. In order to restore the old behaviour,
 just remove "AutoCloseable" from the types.
+
+The property `allowedResourceMethodPatterns` can be used to specify method invocation patterns that return
+resources which are managed externally and don't need to be closed by the caller. This is useful for
+servlet-related streams like `HttpServletRequest.getReader()` or `HttpServletResponse.getWriter()`,
+which are managed by the servlet container, and for mocking frameworks, whose mocks are not real
+resources even when the mocked type implements `java.lang.AutoCloseable`. The patterns use
+InvocationMatcher syntax (e.g., `javax.servlet.ServletRequest#getReader()`).
+
+The defaults cover the servlet API and Mockito's `mock()`. Mocks created by other frameworks
+can be allowed by adding their factory methods, for example `org.easymock.EasyMock#createMock(_*)`,
+`org.jmock.Mockery#mock(_*)` or `mockit.Mocked#new(_*)`.
+
+Note that `Mockito.spy()` and `Mockito.mockStatic()` are intentionally not among the defaults.
+A spy calls through to the real object by default, so either the spy or the object it wraps still
+has to be closed; `mockStatic()` returns a `MockedStatic`, which has to be closed as well. A violation
+in either case is a true positive.
         </description>
         <priority>3</priority>
         <example>
@@ -2054,6 +2113,43 @@ public class JumbledIncrementerRule1 {
         </example>
     </rule>
 
+    <rule name="JUnitJupiterTestNoPrivateModifier"
+          language="java"
+          since="7.25.0"
+          message="JUnit tests cannot be private"
+          class="net.sourceforge.pmd.lang.java.rule.errorprone.JUnitJupiterTestNoPrivateModifierRule"
+          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#junitjupitertestnoprivatemodifier">
+        <description><![CDATA[
+JUnit Jupiter tests cannot be private. Otherwise, they won't be found by the framework:
+
+> Test classes, test methods, and lifecycle methods are not required to be `public`, but they must not be `private`.
+
+— [JUnit Documentation](https://docs.junit.org/6.0.3/writing-tests/test-classes-and-methods.html)
+        ]]></description>
+        <priority>3</priority>
+        <example>
+import org.junit.jupiter.api.Test;
+
+//bad
+class MyTests {
+    @Test
+    private void testFoo() { }
+}
+
+//bad
+private class MyTests {
+    @Test
+    void testFoo() { }
+}
+
+//good
+class MyTests {
+    @Test
+    void testFoo() { }
+}
+        </example>
+    </rule>
+
     <rule name="JUnitSpelling"
           language="java"
           since="1.0"
@@ -2107,6 +2203,32 @@ public class Foo extends TestCase {
 }
 ]]>
         </example>
+    </rule>
+
+    <rule name="LongLiteralEndingWithLowercaseL"
+          language="java"
+          since="7.28.0"
+          message="Use uppercase ''L'' to indicate long literals"
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#longliteralendingwithlowercasel">
+        <description>
+Use uppercase `L` for long literals to avoid confusion with the digit `1`.
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value><![CDATA[
+        //NumericLiteral[@LongLiteral = true() and ends-with(@LiteralText, 'l')]
+]]></value>
+            </property>
+        </properties>
+        <example><![CDATA[
+class Longs {
+  long bad       = 432l; // violation
+  long looksLike = 4321;
+  long good      = 432L; // OK, clearly distinct
+}
+        ]]></example>
     </rule>
 
     <rule name="MethodWithSameNameAsEnclosingClass"
@@ -2709,6 +2831,8 @@ deprecated there as well in favour of `java.time` API.
                 //LocalVariableDeclaration[ClassType[pmd-java:typeIs('java.util.Calendar')]] |
                 //FormalParameter[ClassType[pmd-java:typeIs('java.util.Calendar')]] |
                 //FieldDeclaration[ClassType[pmd-java:typeIs('java.util.Calendar')]] |
+                //RecordComponent[ClassType[pmd-java:typeIs('java.util.Calendar')]] |
+                //TypePattern[ClassType[pmd-java:typeIs('java.util.Calendar')]] |
                 //ConstructorCall[ClassType[pmd-java:typeIs('java.util.Calendar')]]
                 ]]></value>
             </property>
@@ -2772,6 +2896,8 @@ deprecated there as well in favour of `java.time` API.
                 //LocalVariableDeclaration[ClassType[pmd-java:typeIs('java.util.Date')]] |
                 //FormalParameter[ClassType[pmd-java:typeIs('java.util.Date')]] |
                 //FieldDeclaration[ClassType[pmd-java:typeIs('java.util.Date')]] |
+                //RecordComponent[ClassType[pmd-java:typeIs('java.util.Date')]] |
+                //TypePattern[ClassType[pmd-java:typeIs('java.util.Date')]] |
                 //ConstructorCall[ClassType[pmd-java:typeIs('java.util.Date')]]
                 ]]></value>
             </property>
@@ -2814,7 +2940,7 @@ public class Foo {
     <rule name="ReturnEmptyCollectionRatherThanNull"
           language="java"
           since="6.37.0"
-          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          class="net.sourceforge.pmd.lang.java.rule.errorprone.ReturnEmptyCollectionRatherThanNullRule"
           message="Return an empty collection rather than 'null'."
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#returnemptycollectionratherthannull">
         <description>
@@ -2825,21 +2951,6 @@ inadvertent NullPointerExceptions.
 See Effective Java, 3rd Edition, Item 54: Return empty collections or arrays instead of null
         </description>
         <priority>1</priority>
-        <properties>
-            <property name="xpath">
-                <value>
-<![CDATA[
-//ReturnStatement/NullLiteral
-[ancestor::MethodDeclaration[1]
-    [ArrayType
-     or ClassType[pmd-java:typeIs('java.util.Collection')
-        or pmd-java:typeIs('java.util.Map')]]
-]
-[not(./ancestor::LambdaExpression)]
-]]>
-                </value>
-            </property>
-        </properties>
         <example>
 <![CDATA[
 public class Example {
@@ -2998,13 +3109,28 @@ behavior especially when instances are distributed by the container on several J
             <property name="xpath">
                 <value>
 <![CDATA[
-//ClassDeclaration[ImplementsList/ClassType[
-        pmd-java:typeIs('javax.ejb.SessionBean')
-     or pmd-java:typeIs('javax.ejb.EJBHome')
-     or pmd-java:typeIs('javax.ejb.EJBLocalObject')
-     or pmd-java:typeIs('javax.ejb.EJBLocalHome')
-     or pmd-java:typeIs('javax.ejb.EJBObject')
-    ]]
+//ClassDeclaration[
+        ImplementsList/ClassType[
+            pmd-java:typeIs('javax.ejb.SessionBean')
+         or pmd-java:typeIs('jakarta.ejb.SessionBean')
+         or pmd-java:typeIs('javax.ejb.EJBHome')
+         or pmd-java:typeIs('jakarta.ejb.EJBHome')
+         or pmd-java:typeIs('javax.ejb.EJBLocalObject')
+         or pmd-java:typeIs('jakarta.ejb.EJBLocalObject')
+         or pmd-java:typeIs('javax.ejb.EJBLocalHome')
+         or pmd-java:typeIs('jakarta.ejb.EJBLocalHome')
+         or pmd-java:typeIs('javax.ejb.EJBObject')
+         or pmd-java:typeIs('jakarta.ejb.EJBObject')
+        ]
+     or pmd-java:hasAnnotation('javax.ejb.Stateless')
+     or pmd-java:hasAnnotation('jakarta.ejb.Stateless')
+     or pmd-java:hasAnnotation('javax.ejb.Stateful')
+     or pmd-java:hasAnnotation('jakarta.ejb.Stateful')
+     or pmd-java:hasAnnotation('javax.ejb.Singleton')
+     or pmd-java:hasAnnotation('jakarta.ejb.Singleton')
+     or pmd-java:hasAnnotation('javax.ejb.MessageDriven')
+     or pmd-java:hasAnnotation('jakarta.ejb.MessageDriven')
+    ]
     /ClassBody/FieldDeclaration
         [pmd-java:modifiers() = 'static']
         [not(pmd-java:modifiers() = 'final')]
@@ -3019,6 +3145,14 @@ public class SomeEJB extends EJBObject implements EJBLocalHome {
     private static int CountA;          // poor, field can be edited
 
     private static final int CountB;    // preferred, read-only access
+}
+
+// Since EJB 3.0, components may be declared with @Stateless / @Stateful /
+// @Singleton / @MessageDriven instead of implementing an EJB interface.
+@Stateless
+public class MySessionBean {
+
+    private static int CountC;          // poor, field can be edited
 }
 ]]>
         </example>
@@ -3237,7 +3371,11 @@ Do not use "if" statements whose conditionals are always true or always false.
             <property name="xpath">
                 <value>
  <![CDATA[
-//IfStatement[BooleanLiteral[1]]
+//IfStatement[
+    every $node in *[1]/descendant-or-self::*
+    satisfies $node/self::BooleanLiteral
+              or $node/self::UnaryExpression[@Operator = '!']
+]
 union
 //IfStatement/(VariableAccess|UnaryExpression[@Operator = '!']/VariableAccess)/self::VariableAccess[@CompileTimeConstant = false()]
 [@Name = ancestor::IfStatement
@@ -3280,17 +3418,16 @@ an error, use the `fail()` method and provide an indication message of why it di
             <property name="xpath">
                 <value>
 <![CDATA[
-//ClassDeclaration
-    [pmd-java:typeIs('junit.framework.TestCase')
-     or .//Annotation[pmd-java:typeIs('org.junit.Test')
-                   or pmd-java:typeIs('org.junit.jupiter.api.Test')
-                   or pmd-java:typeIs('org.junit.jupiter.api.RepeatedTest')
-                   or pmd-java:typeIs('org.junit.jupiter.api.TestFactory')
-                   or pmd-java:typeIs('org.junit.jupiter.api.TestTemplate')
-                   or pmd-java:typeIs('org.junit.jupiter.params.ParameterizedTest')
-     ]
-    ]
-    //MethodCall[@MethodName = ('assertTrue', 'assertFalse')]
+//MethodCall[pmd-java:matchesSig('junit.framework.TestCase#assertFalse(_*)')
+    or pmd-java:matchesSig('junit.framework.TestCase#assertTrue(_*)')
+    or pmd-java:matchesSig('org.junit.Assert#assertFalse(_*)')
+    or pmd-java:matchesSig('org.junit.Assert#assertTrue(_*)')
+    or pmd-java:matchesSig('org.junit.jupiter.api.Assertions#assertFalse(_*)')
+    or pmd-java:matchesSig('org.junit.jupiter.api.Assertions#assertTrue(_*)')
+    or pmd-java:matchesSig('org.testng.Assert#assertFalse(_*)')
+    or pmd-java:matchesSig('org.testng.Assert#assertTrue(_*)')
+    or pmd-java:matchesSig('org.springframework.test.util.AssertionErrors#assertFalse(_*)')
+    or pmd-java:matchesSig('org.springframework.test.util.AssertionErrors#assertTrue(_*)')]
         [ArgumentList
             [
                 BooleanLiteral or
@@ -3450,8 +3587,8 @@ public class Test {
 
     public void method(String a) {
         String b;
-        // I don't know it method1() can be "null"
-        // but I know "a" is not null..
+        // I don't know if method1() can be "null"
+        // but I know "a" is not null.
         // I'd better write a.equals(method1())
 
         if (a!=null && method1().equals(a)) { // will trigger the rule
@@ -3479,6 +3616,41 @@ public class Test {
     }
 }
 ]]>
+        </example>
+    </rule>
+
+    <rule name="UnusedReturnValue"
+          language="java"
+          since="7.27.0"
+          message="Result of ''{0}'' is ignored."
+          class="net.sourceforge.pmd.lang.java.rule.errorprone.UnusedReturnValueRule"
+          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#unusedreturnvalue">
+        <description>
+The UnusedReturnValue rule ensures that developers do not ignore the return values of methods where doing so would likely be a bug.
+
+This could be because you are treating a mutation-by-copy operation (like String.concat() or BigDecimal.add())
+as an in-place mutation, or forgetting to handle a critical validation result, error code, or stream.
+By enforcing that the returned object is assigned to a variable, passed to another method, or explicitly handled,
+this rule prevents silent logic failures.
+
+See {% rule "java/bestpractices/UnusedAssignment" %} if you think assigning to a variable isn't enough.
+
+This rule replaces the old rules {% rule CheckSkipResult %} and {% rule UselessPureMethodCall %}.
+        </description>
+        <priority>3</priority>
+        <example>
+            <![CDATA[
+public class Foo {
+    public void foo() {
+        bar();
+    }
+
+    @CheckReturnValue
+    private int bar() {
+        return 42;
+    }
+}
+            ]]>
         </example>
     </rule>
 
@@ -3594,6 +3766,7 @@ class Test {
     <rule name="UselessPureMethodCall"
           language="java"
           since="7.17.0"
+          deprecated="true"
           message="Do not call pure method {0} if the result is not used."
           class="net.sourceforge.pmd.lang.java.rule.errorprone.UselessPureMethodCallRule"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#uselesspuremethodcall">
@@ -3602,6 +3775,9 @@ This rule detects method calls of pure methods whose result is unused. A pure me
 side effects. Therefore, ignoring the result of such a method call is likely a mistake.
 
 Either the method call can be removed or the result should be used.
+
+**Deprecated:** This rule is deprecated since PMD 7.27.0 and will be removed with PMD 8.0.0.
+This rule has been replaced by {% rule UnusedReturnValue %}
         </description>
         <priority>3</priority>
         <example>
@@ -3696,4 +3872,32 @@ public class Foo {
         </example>
     </rule>
 
+    <rule name="WrongTestAnnotation"
+          language="java"
+          since="7.26.0"
+          message="The annotation {0} is from {1}, your codebase is using {2}."
+          class="net.sourceforge.pmd.lang.java.rule.errorprone.WrongTestAnnotationRule"
+          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_errorprone.html#wrongtestannotation">
+        <description>
+            When you use the @Test annotation from the wrong framework, your tests won't be executed.
+        </description>
+        <priority>1</priority>
+        <example>
+            <![CDATA[
+// Example 1: GOOD if using JUnit Jupiter, BAD if using JUnit4/TestNG
+import org.junit.jupiter.api.Test;
+public class TestClass {
+    @Test
+    public void myTest() { }
+}
+
+// Example 2: GOOD if using TestNG, BAD if using JUnit
+import org.testng.annotations.Test;
+public class TestClass {
+    @Test
+    public void myTest() { }
+}
+]]>
+        </example>
+    </rule>
 </ruleset>

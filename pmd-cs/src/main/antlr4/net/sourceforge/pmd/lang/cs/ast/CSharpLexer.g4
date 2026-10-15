@@ -16,8 +16,7 @@ private Stack<Integer> curlyLevels = new Stack<Integer>();
 private boolean verbatim;
 }
 
-BYTE_ORDER_MARK: '\u00EF\u00BB\u00BF' { skip(); };
-BOM : '\uFEFF' { skip(); };
+BYTE_ORDER_MARK: '\u00EF\u00BB\u00BF';
 
 SINGLE_LINE_DOC_COMMENT: '///' InputCharacter*    -> channel(COMMENTS_CHANNEL);
 EMPTY_DELIMITED_DOC_COMMENT: '/***/'              -> channel(COMMENTS_CHANNEL);

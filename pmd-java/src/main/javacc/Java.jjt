@@ -367,6 +367,11 @@ class JavaParserImpl {
     return jdkVersion >= 16;
   }
 
+  private boolean isMarkdownJavadocSupported() {
+    // Markdown documentation comments (JEP 467) are available since Java 23
+    return jdkVersion >= 23;
+  }
+
   private boolean localTypesSupported() {
     return isRecordTypeSupported();
   }
@@ -1078,7 +1083,7 @@ ASTCompilationUnit CompilationUnit() :
 
   <EOF>
   {
-     jjtThis.setComments(token_source.comments);
+     jjtThis.setComments(token_source.comments, isMarkdownJavadocSupported());
      return jjtThis;
   }
 }
@@ -1182,7 +1187,7 @@ void ClassOrInterfaceDeclaration() #ClassDeclaration:
 {}
 {
   ( "class" | "interface" { jjtThis.setInterface(); } )
-  <IDENTIFIER> { jjtThis.setSimpleName(getToken(0).getImage()); }
+  <IDENTIFIER> { jjtThis.setSimpleName(getToken(0)); }
   [ TypeParameters() ]
   [ ExtendsList() ]
   [ ImplementsList() ]
@@ -1216,7 +1221,7 @@ void EnumDeclaration():
 {}
 {
   softKeyword("enum")
-  <IDENTIFIER> { jjtThis.setSimpleName(getToken(0).getImage()); }
+  <IDENTIFIER> { jjtThis.setSimpleName(getToken(0)); }
   [ ImplementsList() ]
   EnumBody()
 }
@@ -1241,7 +1246,7 @@ void RecordDeclaration():
 {}
 {
   softKeyword("record")
-  <IDENTIFIER> { jjtThis.setSimpleName(getToken(0).getImage()); }
+  <IDENTIFIER> { jjtThis.setSimpleName(getToken(0)); }
   [ TypeParameters() ]
   RecordHeader()
   [ ImplementsList() ]
@@ -2824,7 +2829,7 @@ void AnnotationMemberList():
 
 void ShorthandAnnotationValue() #MemberValuePair:
 {
-    jjtThis.setImage("value");
+    jjtThis.setImage(ASTMemberValuePair.VALUE_ATTR);
     jjtThis.setShorthand();
 }
 {
@@ -2869,7 +2874,7 @@ void TypeAnnotation() #void:
 void AnnotationTypeDeclaration():
 {}
 {
-  "@" "interface" <IDENTIFIER> { jjtThis.setSimpleName(getToken(0).getImage()); }
+  "@" "interface" <IDENTIFIER> { jjtThis.setSimpleName(getToken(0)); }
   AnnotationTypeBody()
 }
 

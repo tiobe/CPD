@@ -4,10 +4,14 @@
 
 package net.sourceforge.pmd;
 
+import static net.sourceforge.pmd.util.CollectionUtil.setOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -24,14 +28,18 @@ import org.mockito.Mockito;
 
 import net.sourceforge.pmd.lang.Dummy2LanguageModule;
 import net.sourceforge.pmd.lang.DummyLanguageModule;
+import net.sourceforge.pmd.lang.JvmLanguagePropertyBundle;
 import net.sourceforge.pmd.lang.Language;
 import net.sourceforge.pmd.lang.LanguageProcessor;
+import net.sourceforge.pmd.lang.LanguagePropertyBundle;
+import net.sourceforge.pmd.lang.LanguageRegistry;
 import net.sourceforge.pmd.lang.ast.Node;
 import net.sourceforge.pmd.lang.document.FileId;
 import net.sourceforge.pmd.lang.document.SimpleTestTextFile;
 import net.sourceforge.pmd.lang.rule.AbstractRule;
 import net.sourceforge.pmd.lang.rule.MockRule;
 import net.sourceforge.pmd.lang.rule.RuleSet;
+import net.sourceforge.pmd.renderers.CodeClimateRenderer;
 import net.sourceforge.pmd.renderers.Renderer;
 import net.sourceforge.pmd.reporting.Report;
 import net.sourceforge.pmd.reporting.ReportStats;
@@ -50,6 +58,9 @@ class PmdAnalysisTest {
             assertThat(pmd.files().getCollectedFiles(), empty());
             assertThat(pmd.rulesets(), empty());
             assertThat(pmd.renderers(), empty());
+            ReportStats stats = pmd.runAndReturnStats();
+            assertEquals(0, stats.getNumErrors(), "Errors");
+            assertEquals(0, stats.getNumViolations(), "Violations");
         }
     }
 
@@ -179,6 +190,56 @@ class PmdAnalysisTest {
         @Override
         public void apply(Node node, RuleContext ctx) {
             ctx.addViolation(node);
+        }
+    }
+
+    @Test
+    void testConfigurationAppliesRenderer() {
+        PMDConfiguration config = new PMDConfiguration();
+        config.setReportFormat("codeclimate");
+
+        try (PmdAnalysis pmd = PmdAnalysis.create(config)) {
+            assertThat(pmd.renderers(), hasSize(1));
+            assertThat(pmd.renderers().get(0), instanceOf(CodeClimateRenderer.class));
+        }
+    }
+
+    @Test
+    void testConfigurationUsesRelativizeRootForDisplayName() {
+        PMDConfiguration config = new PMDConfiguration();
+        config.addRelativizeRoot(Paths.get("src", "test", "resources"));
+
+        try (PmdAnalysis pmd = PmdAnalysis.create(config)) {
+            FileId sourceFile = FileId.fromPath(Paths.get("src", "test", "resources", "sample-source", "dummy", "foo.txt"));
+            assertThat(pmd.fileNameRenderer().getDisplayName(sourceFile),
+                       equalTo(Paths.get("sample-source", "dummy", "foo.txt").toString()));
+        }
+    }
+
+    @Test
+    void testConfigurationUsesConfiguredLanguageProperties() {
+        PMDConfiguration config = new PMDConfiguration();
+        Language language = DummyLanguageModule.getInstance();
+        LanguagePropertyBundle configuredBundle = config.getLanguageProperties(language);
+
+        try (PmdAnalysis pmd = PmdAnalysis.create(config)) {
+            assertThat(pmd.getLanguageProperties(language), sameInstance(configuredBundle));
+        }
+    }
+
+    @Test
+    void testCreateConfigWithCustomClasspath() {
+        LanguageRegistry registry = new LanguageRegistry(setOf(new FakeJvmLanguageModule()));
+        PMDConfiguration config = new PMDConfiguration(registry);
+        config.setClassLoader(this.getClass().getClassLoader());
+
+        assertDoesNotThrow(() -> PmdAnalysis.create(config));
+    }
+
+    private static class FakeJvmLanguageModule extends DummyLanguageModule {
+        @Override
+        public LanguagePropertyBundle newPropertyBundle() {
+            return new JvmLanguagePropertyBundle(this);
         }
     }
 }

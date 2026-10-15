@@ -2,15 +2,15 @@
 title: Maven PMD Plugin
 tags: [userdocs, tools]
 permalink: pmd_userdocs_tools_maven.html
-last_updated: July 2024 (7.4.0)
-mpmd_version: 3.23.0
+last_updated: September 2026 (7.28.0)
+mpmd_version: 3.28.0
 author: >
     Miguel Griffa <mikkey@users.sourceforge.net>,
     Romain PELISSE <belaran@gmail.com>,
     Andreas Dangel <andreas.dangel@pmd-code.org>
 ---
 
-## Maven 2 and 3
+## Maven 3
 
 ### Running the pmd plugin
 
@@ -253,12 +253,16 @@ In order to use newer versions of PMD 7, you can simply follow the guide
 Note: If you upgrade from Maven PMD Plugin before 3.22.0 you are most likely updating from PMD 6 to PMD 7.
 This upgrade is a major version change. If you use the default ruleset from Maven PMD Plugin, then everything should
 just work. But if you use a custom ruleset, you most likely need to review your ruleset and migrate it to PMD 7.
-Rules might have been renamed or replaced. See [Detailed Release Notes for PMD 7](pmd_release_notes_pmd7.html)
+Rules might have been renamed or replaced. See [Detailed Release Notes for PMD 7](pmd_release_notes_old_pmd700_detail.html)
 and [Migration Guide for PMD 7](pmd_userdocs_migrating_to_pmd7.html).
 
 As PMD 7 revamped the Java module, if you have custom rules, you need to migrate these rules.
 See the use case [I'm using custom rules](pmd_userdocs_migrating_to_pmd7.html#im-using-custom-rules)
 in the Migration Guide.
+
+### Complete Example
+
+See <https://github.com/pmd/pmd-examples/tree/main/maven/simple-project>.
 
 ### Reference
 

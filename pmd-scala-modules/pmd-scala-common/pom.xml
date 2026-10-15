@@ -8,12 +8,12 @@
     <parent>
         <groupId>net.sourceforge.pmd</groupId>
         <artifactId>pmd</artifactId>
-        <version>7.21.0</version>
+        <version>7.28.0</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <properties>
-        <scalameta.version>4.14.6</scalameta.version>
+        <scalameta.version>4.17.4</scalameta.version>
     </properties>
 
     <build>

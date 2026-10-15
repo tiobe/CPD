@@ -4,6 +4,8 @@
 
 package net.sourceforge.pmd.lang.java.rule.codestyle;
 
+import static net.sourceforge.pmd.properties.internal.PropertyParsingUtil.DEPRECATED_RULE_PROPERTY_MARKER;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -13,6 +15,7 @@ import net.sourceforge.pmd.lang.java.ast.JModifier;
 import net.sourceforge.pmd.lang.java.rule.internal.TestFrameworksUtil;
 import net.sourceforge.pmd.properties.PropertyBuilder.RegexPropertyBuilder;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
+import net.sourceforge.pmd.reporting.RuleContext;
 
 
 public class MethodNamingConventionsRule extends AbstractNamingConventionRule<ASTMethodDeclaration> {
@@ -24,7 +27,8 @@ public class MethodNamingConventionsRule extends AbstractNamingConventionRule<AS
     private final PropertyDescriptor<Pattern> nativeRegex = defaultProp("native").build();
     private final PropertyDescriptor<Pattern> junit3Regex = defaultProp("JUnit 3 test").defaultValue("test[A-Z0-9][a-zA-Z0-9]*").build();
     private final PropertyDescriptor<Pattern> junit4Regex = defaultProp("JUnit 4 test").build();
-    private final PropertyDescriptor<Pattern> junit5Regex = defaultProp("JUnit 5 test").build();
+    private final PropertyDescriptor<Pattern> junit5Regex = defaultProp("JUnit 5 test").desc(DEPRECATED_RULE_PROPERTY_MARKER + "Use junitJupiterTestPattern instead").build();
+    private final PropertyDescriptor<Pattern> junitJupiterRegex = defaultProp("JUnit Jupiter test").build();
 
 
     public MethodNamingConventionsRule() {
@@ -35,30 +39,36 @@ public class MethodNamingConventionsRule extends AbstractNamingConventionRule<AS
         definePropertyDescriptor(junit3Regex);
         definePropertyDescriptor(junit4Regex);
         definePropertyDescriptor(junit5Regex);
+        definePropertyDescriptor(junitJupiterRegex);
     }
 
     @Override
     public Object visit(ASTMethodDeclaration node, Object data) {
+        RuleContext ctx = (RuleContext) data;
 
-        if (node.isOverridden()) {
-            return data;
+        if (node.isOverride()) {
+            return null;
         }
 
         if (node.hasModifiers(JModifier.NATIVE)) {
-            checkMatches(node, nativeRegex, data);
+            checkMatches(node, nativeRegex, ctx);
         } else if (node.isStatic()) {
-            checkMatches(node, staticRegex, data);
+            checkMatches(node, staticRegex, ctx);
         } else if (TestFrameworksUtil.isJUnit5Method(node)) {
-            checkMatches(node, junit5Regex, data);
+            PropertyDescriptor<Pattern> junitJupiterRegexToUse =
+                    (isPropertyOverridden(junitJupiterRegex) || !isPropertyOverridden(junit5Regex))
+                            ? junitJupiterRegex
+                            : junit5Regex;
+            checkMatches(node, junitJupiterRegexToUse, ctx);
         } else if (TestFrameworksUtil.isJUnit4Method(node)) {
-            checkMatches(node, junit4Regex, data);
+            checkMatches(node, junit4Regex, ctx);
         } else if (TestFrameworksUtil.isJUnit3Method(node)) {
-            checkMatches(node, junit3Regex, data);
+            checkMatches(node, junit3Regex, ctx);
         } else {
-            checkMatches(node, instanceRegex, data);
+            checkMatches(node, instanceRegex, ctx);
         }
 
-        return data;
+        return null;
     }
 
 

@@ -73,7 +73,7 @@ class CpdCommandTest extends BaseCommandTest<CpdCommand> {
     }
 
     static Collection<Arguments> ignoreSequencesTestArgs() {
-        Collection<Arguments> args = new ArrayList<Arguments>();
+        Collection<Arguments> args = new ArrayList<>();
         args.add(Arguments.of(
                 new String[] {
                     "--ignore-sequences",
