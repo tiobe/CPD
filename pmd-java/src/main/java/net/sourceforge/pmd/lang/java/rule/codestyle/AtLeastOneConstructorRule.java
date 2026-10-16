@@ -15,15 +15,16 @@ import net.sourceforge.pmd.lang.java.ast.ASTConstructorDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTTypeDeclaration;
 import net.sourceforge.pmd.lang.java.ast.JModifier;
 import net.sourceforge.pmd.lang.java.ast.ModifierOwner;
-import net.sourceforge.pmd.lang.java.rule.design.UseUtilityClassRule;
+import net.sourceforge.pmd.lang.java.rule.design.InstantiableUtilityClassRule;
 import net.sourceforge.pmd.lang.java.rule.internal.AbstractIgnoredAnnotationRule;
 import net.sourceforge.pmd.lang.rule.RuleTargetSelector;
+import net.sourceforge.pmd.reporting.RuleContext;
 
 /**
  * This rule detects non-static classes with no constructors;
  * requiring even the default constructor to be explicit.
  * It ignores classes with solely static methods,
- * use {@link UseUtilityClassRule} to flag those.
+ * use {@link InstantiableUtilityClassRule} to flag those.
  */
 public class AtLeastOneConstructorRule extends AbstractIgnoredAnnotationRule {
 
@@ -44,12 +45,14 @@ public class AtLeastOneConstructorRule extends AbstractIgnoredAnnotationRule {
 
     @Override
     public Object visit(final ASTClassDeclaration node, final Object data) {
+        RuleContext ctx = (RuleContext) data;
+
         // Ignore interfaces / static classes / classes that have a constructor / classes ignored through annotations
         if (!node.isRegularClass()
             || node.isStatic()
             || node.getDeclarations().any(it -> it instanceof ASTConstructorDeclaration)
             || hasIgnoredAnnotation(node)) {
-            return data;
+            return null;
         }
 
         NodeStream<ModifierOwner> members = node.getDeclarations()
@@ -57,9 +60,9 @@ public class AtLeastOneConstructorRule extends AbstractIgnoredAnnotationRule {
                                              .filterNot(it -> it instanceof ASTTypeDeclaration);
         if (members.isEmpty() || members.any(it -> !it.hasModifiers(JModifier.STATIC))) {
             // Do we have any non-static members?
-            asCtx(data).addViolation(node);
+            ctx.addViolation(node);
         }
 
-        return data;
+        return null;
     }
 }

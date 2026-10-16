@@ -82,13 +82,15 @@ public class LambdaCanBeMethodReferenceRule extends AbstractJavaRulechainRule {
 
     @Override
     public Object visit(ASTLambdaExpression node, Object data) {
+        RuleContext ctx = (RuleContext) data;
+
         if (node.isExpressionBody()) {
             ASTExpression expression = node.getExpressionBody();
-            processLambdaWithBody(node, asCtx(data), expression);
+            processLambdaWithBody(node, ctx, expression);
         } else {
             ASTStatement onlyStmt = ASTList.singleOrNull(node.getBlockBody());
             if (onlyStmt instanceof ASTReturnStatement) {
-                processLambdaWithBody(node, asCtx(data), ((ASTReturnStatement) onlyStmt).getExpr());
+                processLambdaWithBody(node, ctx, ((ASTReturnStatement) onlyStmt).getExpr());
             }
         }
         return null;
@@ -181,7 +183,7 @@ public class LambdaCanBeMethodReferenceRule extends AbstractJavaRulechainRule {
             // err on the side of FNs
             return false;
         }
-        if (qualifier instanceof ASTConstructorCall) {
+        if (qualifier != null && qualifier.descendantsOrSelf().filterIs(ASTConstructorCall.class).nonEmpty()) {
             // ctors may not be transformed because that would change semantics,
             // with only one instance being created
             return false;
@@ -198,7 +200,7 @@ public class LambdaCanBeMethodReferenceRule extends AbstractJavaRulechainRule {
         boolean isIgnoredBecauseOfMethodCall =
             qualifier instanceof ASTMethodCall && getProperty(IGNORE_IF_RECEIVER_IS_METHOD);
 
-        // if call uses first lambda parm as receiver, then the mref may not npe at creation time 
+        // if call uses first lambda parm as receiver, then the mref may not npe at creation time
         boolean mayNPE = lambda.getParameters().size() == call.getArguments().size();
         boolean isIgnoredBecauseOfNPE = mayNPE && getProperty(IGNORE_IF_MAY_NPE);
         return !isIgnoredBecauseOfNPE && !isIgnoredBecauseOfMethodCall;

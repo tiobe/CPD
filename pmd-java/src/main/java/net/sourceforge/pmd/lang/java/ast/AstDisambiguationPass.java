@@ -58,6 +58,14 @@ final class AstDisambiguationPass {
         nodes.forEach(it -> it.acceptVisitor(DisambigVisitor.INSTANCE, ctx));
     }
 
+    static void retryDisambigWithCtx(NodeStream<? extends ASTAmbiguousName> nodes, ReferenceCtx ctx, JSymbolTable symbolTable) {
+        assert ctx != null : "Null context";
+        nodes.forEach(it -> {
+            it.allowReprocessing();
+            it.setSymbolTable(symbolTable);
+            it.acceptVisitor(DisambigVisitor.INSTANCE, ctx);
+        });
+    }
 
     // those ignore JTypeParameterSymbol, for error handling logic to be uniform
 
@@ -140,6 +148,7 @@ final class AstDisambiguationPass {
             }
 
             if (resolved != name) {
+                InternalApiBridge.setSymbolTable(resolved, symbolTable);
                 ((AbstractJavaNode) name.getParent()).setChild((AbstractJavaNode) resolved, name.getIndexInParent());
             }
 
@@ -218,6 +227,9 @@ final class AstDisambiguationPass {
             int actualArity = ASTList.sizeOrZero(type.getTypeArguments());
             int expectedArity = sym instanceof JClassSymbol ? ((JClassSymbol) sym).getTypeParameterCount() : 0;
             if (actualArity != 0 && actualArity != expectedArity) {
+                if (sym.isUnresolved()) {
+                    throw ctx.getLogger().error(type, JavaSemanticErrors.UNRESOLVED_GENERIC_ARITY, type.getSimpleName());
+                }
                 ctx.getLogger().warning(type, JavaSemanticErrors.MALFORMED_GENERIC_TYPE, expectedArity, actualArity);
             }
         }

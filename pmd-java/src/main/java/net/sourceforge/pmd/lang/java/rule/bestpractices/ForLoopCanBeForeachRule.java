@@ -5,6 +5,8 @@
 package net.sourceforge.pmd.lang.java.rule.bestpractices;
 
 import static net.sourceforge.pmd.lang.ast.NodeStream.empty;
+import static net.sourceforge.pmd.lang.java.ast.internal.JavaAstUtils.isLiteralInt;
+import static net.sourceforge.pmd.lang.java.ast.internal.JavaAstUtils.isReferenceToVar;
 import static net.sourceforge.pmd.lang.java.types.JPrimitiveType.PrimitiveTypeKind.INT;
 
 import java.util.Iterator;
@@ -37,6 +39,7 @@ import net.sourceforge.pmd.lang.java.rule.AbstractJavaRulechainRule;
 import net.sourceforge.pmd.lang.java.symbols.JVariableSymbol;
 import net.sourceforge.pmd.lang.java.types.InvocationMatcher;
 import net.sourceforge.pmd.lang.java.types.TypeTestUtil;
+import net.sourceforge.pmd.reporting.RuleContext;
 
 /**
  * @author Clément Fournier
@@ -56,6 +59,7 @@ public class ForLoopCanBeForeachRule extends AbstractJavaRulechainRule {
 
     @Override
     public Object visit(ASTForStatement forLoop, Object data) {
+        RuleContext ctx = (RuleContext) data;
 
         final @Nullable ASTStatement init = forLoop.getInit();
         final @Nullable ASTStatementExpressionList update = forLoop.getUpdate();
@@ -69,7 +73,7 @@ public class ForLoopCanBeForeachRule extends AbstractJavaRulechainRule {
         ASTVariableId index = getIndexVarDeclaration(init, update);
 
         if (index == null) {
-            return data;
+            return null;
         }
 
         if (index.getTypeMirror().isPrimitive(INT)) {
@@ -77,17 +81,17 @@ public class ForLoopCanBeForeachRule extends AbstractJavaRulechainRule {
             if (iterable != null) {
                 if (isReplaceableArrayLoop(forLoop, index, iterable)
                     || isReplaceableListLoop(forLoop, index, iterable)) {
-                    asCtx(data).addViolation(forLoop);
+                    ctx.addViolation(forLoop);
                 }
             }
         } else if (TypeTestUtil.isA(Iterator.class, index.getTypeMirror())) {
             if (isReplaceableIteratorLoop(index, forLoop)) {
-                asCtx(data).addViolation(forLoop);
+                ctx.addViolation(forLoop);
             }
-            return data;
+            return null;
         }
 
-        return data;
+        return null;
     }
 
 
@@ -129,6 +133,9 @@ public class ForLoopCanBeForeachRule extends AbstractJavaRulechainRule {
                                  JVariableSymbol sym = lhs instanceof ASTNamedReferenceExpr
                                      ? ((ASTNamedReferenceExpr) lhs).getReferencedSym() : null;
                                  return sym == null ? null : sym.tryGetNode();
+                             } else if (JavaAstUtils.isAssignmentExprWithOperator(it, AssignmentOp.ASSIGN)) {
+                                 // x = x + 1
+                                 return asIEqualIPlusOne((ASTAssignmentExpression) it);
                              }
                              return null;
                          })
@@ -147,6 +154,29 @@ public class ForLoopCanBeForeachRule extends AbstractJavaRulechainRule {
                          .orElse(null);
     }
 
+    /**
+     * @return the index variable if the expression is {@code x = x + 1} or {@code x = 1 + x},
+     *         which are semantically equivalent to {@code x += 1} and {@code x++}.
+     */
+    private @Nullable ASTVariableId asIEqualIPlusOne(ASTAssignmentExpression assign) {
+        ASTAssignableExpr lhs = assign.getLeftOperand();
+        if (!(lhs instanceof ASTNamedReferenceExpr)) {
+            return null;
+        }
+        JVariableSymbol sym = ((ASTNamedReferenceExpr) lhs).getReferencedSym();
+        ASTExpression rhs = assign.getRightOperand();
+        if (sym == null || !(rhs instanceof ASTInfixExpression)
+                || ((ASTInfixExpression) rhs).getOperator() != BinaryOp.ADD) {
+            return null;
+        }
+        ASTExpression left = ((ASTInfixExpression) rhs).getLeftOperand();
+        ASTExpression right = ((ASTInfixExpression) rhs).getRightOperand();
+        if (isReferenceToVar(left, sym) && isLiteralInt(right, 1)
+                || isLiteralInt(left, 1) && isReferenceToVar(right, sym)) {
+            return sym.tryGetNode();
+        }
+        return null;
+    }
 
     /**
      * Gets the name of the iterable array or list. The condition has the form i < arr.length or i < coll.size()

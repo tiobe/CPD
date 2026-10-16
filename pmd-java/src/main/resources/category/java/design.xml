@@ -26,7 +26,7 @@ protected constructor in order to prevent instantiation than make the class misl
                 <value>
 <![CDATA[
 //ClassDeclaration
-    [@Abstract = true() and @Interface = false()]
+    [@Abstract = true() and @Interface = false() and not(ExtendsList)]
     [ClassBody[not(ConstructorDeclaration | MethodDeclaration)]]
     [not(pmd-java:hasAnnotation('com.google.auto.value.AutoValue')
          or pmd-java:hasAnnotation('lombok.AllArgsConstructor')
@@ -118,6 +118,7 @@ code size and runtime complexity.
     [count(Block/*) = 1]
     [CatchParameter/ClassType/@SimpleName = Block/ThrowStatement/ConstructorCall/ClassType/@SimpleName]
     [Block/ThrowStatement/ConstructorCall/ArgumentList/@Size = 1]
+    [Block/ThrowStatement/ConstructorCall/ArgumentList//VariableAccess/@Name = CatchParameter/VariableId/@Name]
     /Block/ThrowStatement/ConstructorCall
 ]]>
                 </value>
@@ -610,24 +611,116 @@ public class Foo {
           class="net.sourceforge.pmd.lang.java.rule.design.ExcessiveParameterListRule"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_design.html#excessiveparameterlist">
         <description>
-Methods with numerous parameters are a challenge to maintain, especially if most of them share the
-same datatype. These situations usually denote the need for new objects to wrap the numerous parameters.
+            Methods with numerous parameters are a challenge to maintain and increase the risk of bugs.
+            When parameters share similar datatypes, they become prone to mix-ups during refactoring or
+            when calling the method with positional arguments. Additionally, long parameter lists violate
+            the Single Responsibility Principle — they suggest the method is trying to do too much or that
+            conceptually related data hasn't been properly grouped. As methods evolve, maintaining consistent
+            parameter ordering across overloads and similar methods becomes increasingly difficult.
+
+            Long parameter lists also make code harder to read and understand. Callers must carefully match
+            arguments to parameters, and the parameter list itself becomes a visual barrier. This complexity
+            increases the cognitive load for maintainers and leads to higher defect rates. The more parameters
+            a method has, the less intuitive it becomes and the harder it is to test comprehensively,
+            since the number of possible input combinations grows exponentially.
+
+            There are several well-established alternatives to long parameter lists, each suited to different scenarios:
+            the Builder Pattern (constructing objects fluently with named parameters),
+            Multiple Parameter Objects (grouping related parameters into dedicated classes),
+            Method Overloading (providing convenient signatures for common use cases),
+            and Method Decomposition (splitting a single method into multiple, more focused methods that each take fewer parameters).
+
+            Builder Pattern — Use when you want to replace a method call with many positional arguments
+            with a fluent, named-parameter style. Each parameter is named at the call site, eliminating confusion
+            about argument order and making the code self-documenting.
+
+            Multiple Parameter Objects — Use when parameters naturally group into distinct semantic units.
+            This is lighter than a full builder and works well when the parameter objects are stable
+            and reused across multiple methods.
+
+            Method Overloading — Use to provide convenient signatures for common cases without forcing callers
+            to provide all possible parameters. Effective for APIs where there are genuinely frequent
+            "common use case" patterns. Be cautious of overloading too many variants.
+
+            Method Decomposition — Use when a single method is trying to do too much. Split it into focused methods,
+            each with a clear responsibility and fewer parameters. Often combined with builder-style fluent APIs
+            for controlled sequencing and initialization.
         </description>
         <priority>3</priority>
         <example>
-<![CDATA[
-public void addPerson(      // too many arguments liable to be mixed up
-    int birthYear, int birthMonth, int birthDate, int height, int weight, int ssn) {
+            <![CDATA[
+// ============ PROBLEM ============
+public void createDatabaseConnection(String host, int port, String username, String password, int timeout, boolean ssl) { }
 
-    . . . .
+// Usage - hard to understand what each argument means
+createDatabaseConnection("localhost", 5432, "admin", "secret", 30, true);
+
+
+// ============ SOLUTION 1: Builder Pattern ============
+public class ConnectionBuilder { [...] }
+
+// Usage - clear and self-documenting
+createDatabaseConnection(new ConnectionBuilder()
+    .withHost("localhost")
+    .withPort(5432)
+    .withCredentials("admin", "secret")
+    .withTimeout(30)
+    .withSSL(true)
+    .build());
+
+
+// ============ SOLUTION 2: Multiple Parameter Objects ============
+public class ServerAddress { [...] }
+
+public class DatabaseCredentials { [...] }
+
+public class ConnectionOptions { [...] }
+
+public void createDatabaseConnection(ServerAddress address, DatabaseCredentials credentials, ConnectionOptions options) { }
+
+// Usage - semantic grouping makes intent clear
+createDatabaseConnection(
+    new ServerAddress("localhost", 5432),
+    new DatabaseCredentials("admin", "secret"),
+    new ConnectionOptions(30, true)
+);
+
+
+// ============ example for Method Overloading ============
+public void sendEmail(String to, String subject, String body) {
+    // Basic email with defaults
 }
 
-public void addPerson(      // preferred approach
-    Date birthdate, BodyMeasurements measurements, int ssn) {
-
-    . . . .
+public void sendEmail(String to, String subject, String body, String[] cc) {
+    // With cc recipients
 }
-]]>
+
+public void sendEmail(String to, String subject, String body, String[] cc, String[] bcc, String from, boolean html) {  //NOPMD
+    // Full featured
+}
+
+// Usage - call with only needed parameters
+sendEmail("user@example.com", "Welcome", "Hello there");
+sendEmail("user@example.com", "Welcome", "Hello there", new String[]{"manager@example.com"});
+sendEmail("user@example.com", "Welcome", "<b>Hello</b>",
+          new String[]{"manager@example.com"},
+          new String[]{"admin@example.com"},
+          "noreply@company.com",
+          true);
+
+
+// ============ Example for Method Decomposition ============
+// Problem: ReportGenerator is called like this:
+Report report = ReportGenerator.generate("Sales Report", "PDF", "Company Report", 16, true, "Page {n} of {total}", 1, "center", "John Smith", LocalDate.now(), "1.0"
+
+// Solution: Allow your code to be called like this:
+ReportGenerator generator = new ReportGenerator();
+generator.startReport("Sales Report", "PDF");
+generator.addHeader("Company Report", 16, true);
+generator.addFooter("Page {n} of {total}", 1, "center");
+generator.addMetadata("John Smith", LocalDate.now(), "1.0");
+Report report = generator.generate();
+            ]]>
         </example>
     </rule>
 
@@ -741,6 +834,84 @@ public class Foo {
   public void foo() {
      int a = x + 2;
   }
+}
+]]>
+        </example>
+    </rule>
+
+    <rule name="InstantiableUtilityClass"
+          language="java"
+          since="0.3"
+          message="All members are static. Consider adding a private no-args constructor to prevent instantiation."
+          class="net.sourceforge.pmd.lang.java.rule.design.InstantiableUtilityClassRule"
+          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_design.html#instantiableutilityclass">
+        <description>
+            A class is a utility class, if and only if it fulfills ALL the following criteria:
+            * ALL member functions, member variables, nested classes, and initializers are static.
+            * The class has at least one member function, member variable, or nested class that is not private.
+            * The class is a concrete class (neither abstract nor an interface).
+            * The class has no superclasses and implements no interfaces.
+            * The class has no main method.
+
+            Utility classes should not be instantiable. Make sure that the only constructor is a
+            private no-args constructor to enforce this.
+
+            (Note, that this rule was known as UseSingleton before PMD 5.1.0 and as UseUtilityClass before PMD 7.27.0).
+        </description>
+        <priority>3</priority>
+        <example>
+            <![CDATA[
+public class MaybeAUtility {
+    public static final int SOME_CONST = 42;
+
+    public static void foo() {}
+    public static void bar() {}
+}
+]]>
+        </example>
+    </rule>
+
+    <rule name="InternalApiUsage"
+          language="java"
+          since="7.28.0"
+          message="Do not use internal APIs. {0} ''{1}'' is restricted to {2}."
+          class="net.sourceforge.pmd.lang.java.rule.design.InternalApiUsageRule"
+          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_design.html#internalapiusage">
+        <description>
+Some APIs are designed to be used only by the library or package that defines them, and using them from other code
+could cause incorrect behavior if the library class changes. By default, this rule reports usages of methods and fields
+
+* annotated by `@VisibleForTesting`, unless they are used from a test class or the declaring class,
+* annotated by `@TestOnly`, unless they are called from a test class,
+* annotated by `@org.apiguardian.api.API(status=INTERNAL)` or `org.jetbrains.annotations.ApiStatus.Internal`,
+  unless they are declared in the analyzed library.
+
+Annotations `@VisibleForTesting` and `@TestOnly` are matched by simple name, so they can be imported from
+any framework or defined in your own codebase.
+
+In the context of this rule, classes are considered to belong to the analyzed library,
+if the first three components of their package name match.
+This behavior can be overridden using the `ownPackages` property that may list
+packages which are considered to belong to the analyzed library.
+
+It is also possible to define which API statuses should be reported, the `reportedStatuses` property can be set
+to report APIs with experimental, internal, deprecated or (for JetBrains annotations) overrides-only status.
+        </description>
+        <priority>1</priority>
+        <example>
+            <![CDATA[
+public class Foo {
+    void bar() {
+        new Bar().setSecret(0);
+    }
+}
+
+class Bar {
+    private int secret;
+    @VisibleForTesting
+    setSecret(int secret) {
+        this.secret = secret;
+    }
 }
 ]]>
         </example>
@@ -1058,11 +1229,58 @@ public class Foo {
         </example>
     </rule>
 
+    <rule name="ProtectedMemberInFinalClass"
+          language="java"
+          since="7.27.0"
+          message="Avoid protected members in a final class. Change to private or package access."
+          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_design.html#protectedmemberinfinalclass">
+        <description>
+            Do not use protected members in final classes since they cannot be subclassed. This does
+            not apply to methods that override a protected method from a superclass, since visibility cannot be decreased .
+            Clarify your intent by using private or package access modifiers instead.
+
+            This replaced the old rules "AvoidProtectedFieldInFinalClass" and "AvoidProtectedMethodInFinalClassNotExtending" in PMD 7.27.0
+        </description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value>
+                    <![CDATA[
+//ClassDeclaration[@Final=true()]/ClassBody/
+(
+  FieldDeclaration |
+  EnumDeclaration |
+  RecordDeclaration |
+  ClassDeclaration |
+  AnnotationTypeDeclaration |
+  ConstructorDeclaration |
+  MethodDeclaration[ @Override=false() ]
+)[@Visibility="protected"]
+ ]]>
+                </value>
+            </property>
+        </properties>
+        <example>
+            <![CDATA[
+public final class Foo {
+  private int bar() {}
+  protected int baz() {} // Foo cannot be subclassed, and doesn't extend anything, so is baz() really private or package visible?
+  protected int field; // This should be a private or package visible field
+  protected enum InnerEnum {} // Same for enums ...
+  protected class InnerClass {} // ... classes ...
+  protected record InnerRecord {} // ... record ...
+  protected @interface InnerAnnotation {} // ... and annotations
+}
+ ]]>
+        </example>
+    </rule>
+
     <rule name="PublicMemberInNonPublicType"
           language="java"
           since="7.21.0"
           message="Public member ''{0}'' declared in a non-public type"
-          class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
+          class="net.sourceforge.pmd.lang.java.rule.design.PublicMemberInNonPublicTypeRule"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_design.html#publicmemberinnonpublictype">
         <description>
 A non-public type should not declare its own members as public, as their visibility is effectively limited
@@ -1079,21 +1297,6 @@ methods of the supertype. Converting these methods to private removes them from 
 can inadvertently change the subtype's public API.
         </description>
         <priority>3</priority>
-        <properties>
-            <property name="xpath">
-                <value><![CDATA[
-//(MethodDeclaration|ConstructorDeclaration|CompactConstructorDeclaration|
-   FieldDeclaration|
-   ClassDeclaration|EnumDeclaration|AnnotationTypeDeclaration)
-  [@EffectiveVisibility != 'public']
-  [@Visibility = 'public']
-  [@Overridden = false() or not(@Overridden)]
-  [not(ancestor::ClassDeclaration[@Interface = true()] or ancestor::AnnotationTypeDeclaration)]
-(: Make sure, we return nodes that implement getName() for {0} in the rule message :)
-!(if (self::FieldDeclaration) then VariableDeclarator else .)
-]]></value>
-            </property>
-        </properties>
         <example><![CDATA[
 class Wrong {
     public void method() {} // violation
@@ -1252,11 +1455,11 @@ public boolean isBarEqualTo(int x) {
     <rule name="SimplifyConditional"
           language="java"
           since="3.1"
-          message="No need to check for null before an instanceof"
+          message="No need to check for null in the same expression as an instanceof"
           class="net.sourceforge.pmd.lang.java.rule.design.SimplifyConditionalRule"
           externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_design.html#simplifyconditional">
         <description>
-No need to check for null before an instanceof; the instanceof keyword returns false when given a null argument.
+No need to check for null in the same expression as an instanceof; the instanceof keyword returns false when given a null argument.
         </description>
         <priority>3</priority>
         <example>
@@ -1357,8 +1560,8 @@ city/state/zip fields could park them within a single Address field.
             <property name="xpath">
                 <value>
 <![CDATA[
-//ClassDeclaration/ClassBody
-  [count(FieldDeclaration
+//ClassDeclaration
+  [count(ClassBody/FieldDeclaration
             [not(pmd-java:modifiers() = 'final')]
             [not(pmd-java:modifiers() = 'static')]
         ) > $maxfields]
@@ -1400,9 +1603,9 @@ complexity and find a way to have more fine grained objects.
             <property name="xpath">
                 <value>
 <![CDATA[
- //ClassDeclaration/ClassBody
+ //ClassDeclaration
      [
-      count(MethodDeclaration[
+      count(ClassBody/MethodDeclaration[
          not (
                 (starts-with(@Name,'get') or starts-with(@Name,'set') or starts-with(@Name,'is'))
                 and
@@ -1449,7 +1652,8 @@ public Long getId() {
           since="4.2.6"
           message="Rather than using a lot of String arguments, consider using a container object for those values."
           class="net.sourceforge.pmd.lang.rule.xpath.XPathRule"
-          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_design.html#useobjectforclearerapi">
+          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_design.html#useobjectforclearerapi"
+          deprecated="true">
         <description>
 When you write a public method, you should be thinking in terms of an API. If your method is public, it means other class
 will use it, therefore, you want (or need) to offer a comprehensive and evolutive API. If you pass a lot of information
@@ -1457,6 +1661,9 @@ as a simple series of Strings, you may think of using an Object to represent all
 API (such as doWork(Workload workload), rather than a tedious series of Strings) and more importantly, if you need at some
 point to pass extra data, you'll be able to do so by simply modifying or extending Workload without any modification to
 your API.
+
+**Deprecated:** This rule is deprecated since PMD 7.26.0 and will be removed with PMD 8.0.0.
+Use {% rule ExcessiveParameterList %} instead.
         </description>
         <priority>3</priority>
         <properties>
@@ -1488,28 +1695,6 @@ public class MyClass {
         </example>
     </rule>
 
-    <rule name="UseUtilityClass"
-          language="java"
-          since="0.3"
-          message="All methods are static. Consider adding a private no-args constructor to prevent instantiation."
-          class="net.sourceforge.pmd.lang.java.rule.design.UseUtilityClassRule"
-          externalInfoUrl="${pmd.website.baseurl}/pmd_rules_java_design.html#useutilityclass">
-        <description>
-For classes that only have static methods, consider making them utility classes.
-Note that this doesn't apply to abstract classes, since their subclasses may
-well include non-static methods.  Also, if you want this class to be a utility class,
-remember to add a private constructor to prevent instantiation.
-(Note, that this use was known before PMD 5.1.0 as UseSingleton).
-        </description>
-        <priority>3</priority>
-        <example>
-<![CDATA[
-public class MaybeAUtility {
-  public static void foo() {}
-  public static void bar() {}
-}
-]]>
-        </example>
-    </rule>
+    <rule name="UseUtilityClass" deprecated="true" ref="InstantiableUtilityClass" />
 
 </ruleset>

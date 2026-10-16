@@ -6,6 +6,7 @@ package net.sourceforge.pmd.lang.java.rule.bestpractices;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import net.sourceforge.pmd.lang.ast.NodeStream;
 import net.sourceforge.pmd.lang.java.ast.ASTAnnotation;
@@ -17,9 +18,11 @@ import net.sourceforge.pmd.lang.java.ast.JavaNode;
 import net.sourceforge.pmd.lang.java.ast.ModifierOwner.Visibility;
 import net.sourceforge.pmd.lang.java.ast.internal.JavaAstUtils;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRulechainRule;
+import net.sourceforge.pmd.lang.java.rule.internal.JavaRuleUtil;
 import net.sourceforge.pmd.lang.java.types.TypeTestUtil;
 import net.sourceforge.pmd.properties.PropertyDescriptor;
 import net.sourceforge.pmd.properties.PropertyFactory;
+import net.sourceforge.pmd.reporting.RuleContext;
 
 public class UnusedPrivateFieldRule extends AbstractJavaRulechainRule {
 
@@ -45,17 +48,21 @@ public class UnusedPrivateFieldRule extends AbstractJavaRulechainRule {
 
     @Override
     public Object visitJavaNode(JavaNode node, Object data) {
+        RuleContext ctx = (RuleContext) data;
+
         if (node instanceof ASTTypeDeclaration) {
             ASTTypeDeclaration type = (ASTTypeDeclaration) node;
             if (hasAnyAnnotation(type)) {
                 return null;
             }
-
+            Set<String> fieldsUsedByAnnotations = JavaRuleUtil.getMembersUsedByAnnotations(type.getRoot(),
+                "org.junit.jupiter.params.provider.FieldSource");
             for (ASTFieldDeclaration field : type.getDeclarations().filterIs(ASTFieldDeclaration.class)) {
                 if (!isIgnored(field)) {
                     for (ASTVariableId varId : field.getVarIds()) {
-                        if (JavaAstUtils.isNeverUsed(varId)) {
-                            asCtx(data).addViolation(varId, varId.getName());
+                        if (!fieldsUsedByAnnotations.contains(varId.getName())
+                                && JavaAstUtils.isNeverUsed(varId)) {
+                            ctx.addViolation(varId, varId.getName());
                         }
                     }
                 }
